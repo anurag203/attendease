@@ -54,6 +54,14 @@ exports.startSession = async (req, res) => {
 // @route   GET /api/sessions/active
 exports.getActiveSessions = async (req, res) => {
   try {
+    // First, auto-end expired sessions
+    await pool.query(`
+      UPDATE attendance_sessions
+      SET status = 'ended', ended_at = NOW()
+      WHERE status = 'active' 
+        AND (session_date + (duration_minutes || ' minutes')::INTERVAL) < NOW()
+    `);
+
     let query;
     let params = [];
 
