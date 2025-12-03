@@ -8,7 +8,12 @@ let USE_REAL_BLUETOOTH = false;
 let USE_NATIVE_ANDROID = false;
 
 // Try to get native Android Bluetooth adapter as fallback
-const { RNBluetoothClassic: NativeBluetoothModule } = NativeModules;
+const { RNBluetoothClassic: NativeBluetoothModule, BluetoothModule: CustomBluetoothModule } = NativeModules;
+
+console.log('🔍 Available modules:', {
+  RNBluetoothClassic: !!NativeBluetoothModule,
+  BluetoothModule: !!CustomBluetoothModule
+});
 
 try {
   // Try different import methods
@@ -89,24 +94,41 @@ export const requestBluetoothPermissions = async () => {
 
 export const checkBluetoothState = async () => {
   try {
+    // Priority 1: Use our custom native module (most accurate)
+    if (Platform.OS === 'android' && CustomBluetoothModule) {
+      try {
+        const enabled = await CustomBluetoothModule.isEnabled();
+        console.log('✅ Custom Bluetooth module - enabled:', enabled);
+        return enabled === true;
+      } catch (customError) {
+        console.log('⚠️ Custom module check failed:', customError.message);
+      }
+    }
+    
+    // Priority 2: Try native bluetooth classic module
+    if (Platform.OS === 'android' && NativeBluetoothModule) {
+      try {
+        const enabled = await NativeBluetoothModule.isEnabled();
+        console.log('📱 Native BT Classic - enabled:', enabled);
+        return enabled === true;
+      } catch (nativeError) {
+        console.log('⚠️ Native BT Classic failed:', nativeError.message);
+      }
+    }
+    
+    // Priority 3: Try library method
     if (BluetoothStateManager && typeof BluetoothStateManager.getState === 'function') {
       const state = await BluetoothStateManager.getState();
-      console.log('📱 Bluetooth state:', state);
-      return state === 'PoweredOn';
+      console.log('📱 BT State Manager - state:', state);
+      return state === 'PoweredOn' || state === 'On';
     }
     
-    // Fallback: Try native module
-    if (NativeBluetoothModule && typeof NativeBluetoothModule.isEnabled === 'function') {
-      const enabled = await NativeBluetoothModule.isEnabled();
-      console.log('📱 Native Bluetooth enabled:', enabled);
-      return enabled;
-    }
-    
-    // Mock: Always return true for testing
-    console.log('📱 Using mock Bluetooth state (true)');
-    return true;
+    // If all else fails, return false (safer than true)
+    console.log('❌ Cannot determine Bluetooth state, assuming OFF');
+    return false;
   } catch (error) {
     console.error('Check Bluetooth state error:', error);
+    // Return false on error (safer than true)
     return false;
   }
 };
