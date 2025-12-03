@@ -11,6 +11,13 @@ export const BRANCHES = [
 
 export const YEARS = [1, 2, 3, 4];
 
+// Helper function to format year with ordinal suffix
+export const formatYear = (year) => {
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const value = year % 100;
+  return `${year}${suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0]} Year`;
+};
+
 export const COLORS = {
   primary: '#3b82f6',
   secondary: '#10b981',

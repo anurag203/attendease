@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { courseAPI, sessionAPI } from '../../services/api';
-import { COLORS } from '../../utils/constants';
+import { COLORS, formatYear } from '../../utils/constants';
 
 export default function TeacherDashboard({ navigation }) {
   const { user, logout } = useAuth();
@@ -131,7 +131,7 @@ export default function TeacherDashboard({ navigation }) {
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailIcon}>📅</Text>
-            <Text style={styles.detailText}>Year {course.year}</Text>
+            <Text style={styles.detailText}>{formatYear(course.year)}</Text>
           </View>
         </View>
       </TouchableOpacity>

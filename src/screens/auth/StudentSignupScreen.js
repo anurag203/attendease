@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, DEGREES, BRANCHES, YEARS } from '../../utils/constants';
+import { COLORS, DEGREES, BRANCHES, YEARS, formatYear } from '../../utils/constants';
 
 export default function StudentSignupScreen({ navigation }) {
   const { register } = useAuth();
@@ -190,7 +190,7 @@ export default function StudentSignupScreen({ navigation }) {
                 dropdownIconColor={COLORS.white}
               >
                 {YEARS.map((year) => (
-                  <Picker.Item key={year} label={`Year ${year}`} value={year} />
+                  <Picker.Item key={year} label={formatYear(year)} value={year} />
                 ))}
               </Picker>
             </View>

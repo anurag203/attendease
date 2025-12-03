@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import { courseAPI } from '../../services/api';
-import { COLORS, DEGREES, BRANCHES, YEARS } from '../../utils/constants';
+import { COLORS, DEGREES, BRANCHES, YEARS, formatYear } from '../../utils/constants';
 
 export default function CreateCourseScreen({ navigation, route }) {
   const existingCourse = route.params?.course;
@@ -130,7 +130,7 @@ export default function CreateCourseScreen({ navigation, route }) {
                 dropdownIconColor={COLORS.white}
               >
                 {YEARS.map((year) => (
-                  <Picker.Item key={year} label={`Year ${year}`} value={year} />
+                  <Picker.Item key={year} label={formatYear(year)} value={year} />
                 ))}
               </Picker>
             </View>

@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { courseAPI, sessionAPI } from '../../services/api';
-import { COLORS } from '../../utils/constants';
+import { COLORS, formatYear } from '../../utils/constants';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function StudentDashboard({ navigation }) {
@@ -110,7 +110,7 @@ export default function StudentDashboard({ navigation }) {
         <View>
           <Text style={styles.headerTitle}>My Courses</Text>
           <Text style={styles.headerSubtitle}>
-            {user?.student_id} • {user?.branch} • Year {user?.year}
+            {user?.student_id} • {user?.branch} • {formatYear(user?.year)}
           </Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>

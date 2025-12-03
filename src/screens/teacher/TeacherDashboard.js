@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { courseAPI } from '../../services/api';
-import { COLORS } from '../../utils/constants';
+import { COLORS, formatYear } from '../../utils/constants';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function TeacherDashboard({ navigation }) {
@@ -118,7 +118,7 @@ export default function TeacherDashboard({ navigation }) {
         </View>
         <View style={styles.detailItem}>
           <Text style={styles.detailIcon}>📅</Text>
-          <Text style={styles.detailText}>Year {item.year}</Text>
+          <Text style={styles.detailText}>{formatYear(item.year)}</Text>
         </View>
       </View>
 
