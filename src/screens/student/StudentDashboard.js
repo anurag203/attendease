@@ -395,13 +395,16 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
+    alignItems: 'center',
   },
   joinButton: {
-    flex: 2,
+    flex: 1.5,
     backgroundColor: COLORS.secondary,
-    padding: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   joinButtonText: {
     color: COLORS.white,
@@ -409,15 +412,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   historyButton: {
-    flex: 1,
+    flex: 1.2,
     backgroundColor: COLORS.mediumGray,
-    padding: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   historyButtonText: {
     color: COLORS.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
 });
