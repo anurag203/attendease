@@ -55,12 +55,17 @@ exports.startSession = async (req, res) => {
 exports.getActiveSessions = async (req, res) => {
   try {
     // First, auto-end expired sessions
-    await pool.query(`
+    const endResult = await pool.query(`
       UPDATE attendance_sessions
       SET status = 'ended', ended_at = NOW()
       WHERE status = 'active' 
         AND (session_date + (duration_minutes || ' minutes')::INTERVAL) < NOW()
+      RETURNING id, session_date, duration_minutes
     `);
+    
+    if (endResult.rows.length > 0) {
+      console.log('⏰ Auto-ended sessions:', endResult.rows.length, endResult.rows);
+    }
 
     let query;
     let params = [];

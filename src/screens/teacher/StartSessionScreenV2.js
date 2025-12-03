@@ -97,9 +97,18 @@ export default function StartSessionScreen({ navigation, route }) {
       const response = await sessionAPI.getSession(sessionId);
       const session = response.data?.data || response.data;
       
+      console.log('📊 Loading existing session:', {
+        sessionId,
+        session_date: session?.session_date,
+        duration_minutes: session?.duration_minutes,
+        status: session?.status,
+        now: new Date().toISOString()
+      });
+      
       if (session) {
         // Check if session is still active
         if (session.status === 'ended') {
+          console.log('❌ Session status is "ended"');
           Alert.alert('Session Ended', 'This session has already ended');
           navigation.goBack();
           return;
@@ -112,11 +121,20 @@ export default function StartSessionScreen({ navigation, route }) {
         const now = Date.now();
         const remainingSeconds = Math.floor((endTime - now) / 1000);
         
+        console.log('⏱️ Time calculation:', {
+          startTime: new Date(startTime).toISOString(),
+          endTime: new Date(endTime).toISOString(),
+          now: new Date(now).toISOString(),
+          remainingSeconds
+        });
+        
         if (remainingSeconds > 0) {
+          console.log('✅ Session is active, remaining:', remainingSeconds);
           setTimeRemaining(remainingSeconds);
           setMarkedStudents(session.marked_students || []);
         } else {
           // Session has already ended
+          console.log('❌ Time expired, remaining:', remainingSeconds);
           Alert.alert('Session Ended', 'This session has already ended');
           navigation.goBack();
         }
