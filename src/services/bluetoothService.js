@@ -188,17 +188,32 @@ export const getDeviceAddress = async () => {
       return null;
     }
 
+    // DEBUG: Check what's available
+    console.log('🔍 DEBUG - CustomBluetoothModule:', !!CustomBluetoothModule);
+    if (CustomBluetoothModule) {
+      console.log('🔍 DEBUG - Available methods:', Object.keys(CustomBluetoothModule));
+      console.log('🔍 DEBUG - getAddress type:', typeof CustomBluetoothModule.getAddress);
+    }
+
     // Priority 1: Get local adapter address from our custom native module
     if (CustomBluetoothModule && typeof CustomBluetoothModule.getAddress === 'function') {
+      console.log('✅ Calling CustomBluetoothModule.getAddress()...');
       try {
         const address = await CustomBluetoothModule.getAddress();
+        console.log('📱 getAddress() returned:', address);
         if (address && address !== '02:00:00:00:00:00') {
           console.log('📱 Got LOCAL device address from custom module:', address);
           return address;
+        } else {
+          console.log('⚠️ Address is null or default:', address);
         }
       } catch (error) {
-        console.log('⚠️ Custom module getAddress failed:', error.message);
+        console.log('❌ Custom module getAddress EXCEPTION:', error);
+        console.log('❌ Error message:', error.message);
+        console.log('❌ Error stack:', error.stack);
       }
+    } else {
+      console.log('❌ getAddress() is NOT available on CustomBluetoothModule');
     }
     
     // Priority 2: Try RNBluetoothClassic local address (if available)
