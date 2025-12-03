@@ -18,15 +18,17 @@ export default function TeacherSignupScreen({ navigation }) {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     department: 'Computer Science',
   });
 
   const handleSignup = async () => {
-    if (!formData.full_name || !formData.email || !formData.password) {
+    if (!formData.full_name || !formData.email || !formData.password || !formData.confirmPassword) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
@@ -42,9 +44,15 @@ export default function TeacherSignupScreen({ navigation }) {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match');
+      return;
+    }
+
     setLoading(true);
+    const { confirmPassword, ...signupData } = formData;
     const result = await register({
-      ...formData,
+      ...signupData,
       role: 'teacher',
     });
     setLoading(false);
@@ -109,6 +117,26 @@ export default function TeacherSignupScreen({ navigation }) {
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password *</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Re-enter password"
+                placeholderTextColor={COLORS.lightGray}
+                value={formData.confirmPassword}
+                onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
               </TouchableOpacity>
             </View>
           </View>

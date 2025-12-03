@@ -18,17 +18,19 @@ export default function StudentSignupScreen({ navigation }) {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     degree: 'B.Tech',
     branch: 'Computer Science',
     year: 1,
   });
 
   const handleSignup = async () => {
-    if (!formData.full_name || !formData.email || !formData.password) {
+    if (!formData.full_name || !formData.email || !formData.password || !formData.confirmPassword) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
@@ -36,6 +38,11 @@ export default function StudentSignupScreen({ navigation }) {
     // Validate MNIT email
     if (!formData.email.toLowerCase().endsWith('@mnit.ac.in')) {
       Alert.alert('Invalid Email', 'Please use your MNIT email address (@mnit.ac.in)');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match');
       return;
     }
 
@@ -48,8 +55,9 @@ export default function StudentSignupScreen({ navigation }) {
     const student_id = formData.email.split('@')[0].toUpperCase();
 
     setLoading(true);
+    const { confirmPassword, ...signupData } = formData;
     const result = await register({
-      ...formData,
+      ...signupData,
       student_id,
       role: 'student',
     });
@@ -116,6 +124,26 @@ export default function StudentSignupScreen({ navigation }) {
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password *</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Re-enter password"
+                placeholderTextColor={COLORS.lightGray}
+                value={formData.confirmPassword}
+                onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
               </TouchableOpacity>
             </View>
           </View>
