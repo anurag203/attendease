@@ -117,9 +117,17 @@ export default function EditStudentsScreen({ navigation, route }) {
 
             if (errors === 0) {
               Alert.alert('Success', 'Student list updated successfully');
-              navigation.goBack();
+              await fetchData(); // Refresh the list to show updated data
+              // Update enrolled set to reflect current state
+              const updatedEnrolledIds = new Set(
+                allStudents
+                  .filter(s => !studentsToRemove.find(r => r.id === s.id))
+                  .map(s => s.id)
+              );
+              setEnrolledStudentIds(updatedEnrolledIds);
             } else {
               Alert.alert('Partial Success', `Failed to remove ${errors} student(s)`);
+              await fetchData(); // Refresh even on partial success
             }
           },
         },

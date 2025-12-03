@@ -28,11 +28,13 @@ export default function StudentDashboard({ navigation }) {
         courseAPI.getCourses(),
         sessionAPI.getActiveSessions(),
       ]);
-      setCourses(coursesRes.data.data);
-      setActiveSessions(sessionsRes.data.data);
+      setCourses(coursesRes.data.data || []);
+      setActiveSessions(sessionsRes.data.data || []);
     } catch (error) {
       console.error('Fetch data error:', error);
-      Alert.alert('Error', 'Failed to load data');
+      if (!refreshing) { // Only show alert if not a background refresh
+        Alert.alert('Error', 'Failed to load data');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -125,6 +127,9 @@ export default function StudentDashboard({ navigation }) {
           <Text style={styles.emptySubtext}>
             Courses will appear based on your degree, branch, and year
           </Text>
+          <Text style={styles.refreshHint}>
+            👇 Pull down to refresh
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -201,6 +206,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.lightGray,
     textAlign: 'center',
+  },
+  refreshHint: {
+    fontSize: 14,
+    color: COLORS.primary,
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '500',
   },
   listContent: {
     padding: 16,
