@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Your computer's local IP for mobile device connection
-const API_URL = 'http://192.168.0.102:3001/api';
+// Cloud backend on Render (works on ANY network)
+const API_URL = 'https://attendease-backend-8oqg.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
