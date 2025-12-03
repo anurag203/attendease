@@ -262,6 +262,67 @@ exports.getCourseHistory = async (req, res) => {
   }
 };
 
+// @desc    Delete attendance record
+// @route   DELETE /api/sessions/attendance/:attendanceId
+exports.deleteAttendance = async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+
+    const result = await pool.query(
+      `DELETE FROM attendance 
+       WHERE id = $1
+       RETURNING *`,
+      [attendanceId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Attendance record not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance record deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete attendance error:', error);
+    res.status(500).json({ error: 'Server error while deleting attendance' });
+  }
+};
+
+// @desc    Delete session
+// @route   DELETE /api/sessions/:id
+exports.deleteSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Delete all attendance records for this session first
+    await pool.query(
+      `DELETE FROM attendance WHERE session_id = $1`,
+      [id]
+    );
+
+    // Then delete the session
+    const result = await pool.query(
+      `DELETE FROM attendance_sessions 
+       WHERE id = $1 AND teacher_id = $2
+       RETURNING *`,
+      [id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found or unauthorized' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Session deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete session error:', error);
+    res.status(500).json({ error: 'Server error while deleting session' });
+  }
+};
+
 // @desc    Get student attendance stats
 // @route   GET /api/sessions/student/stats
 exports.getStudentStats = async (req, res) => {

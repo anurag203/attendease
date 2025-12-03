@@ -66,6 +66,8 @@ export const sessionAPI = {
   endSession: (id) => api.post(`/sessions/${id}/end`),
   getCourseHistory: (courseId) => api.get(`/sessions/course/${courseId}/history`),
   getStudentStats: (courseId) => api.get('/sessions/student/stats', { params: { course_id: courseId } }),
+  deleteAttendance: (attendanceId) => api.delete(`/sessions/attendance/${attendanceId}`),
+  deleteSession: (sessionId) => api.delete(`/sessions/${sessionId}`),
 };
 
 export default api;
