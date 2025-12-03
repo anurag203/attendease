@@ -21,6 +21,7 @@ export default function StudentDashboard({ navigation }) {
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const fetchData = async () => {
     try {
@@ -56,9 +57,52 @@ export default function StudentDashboard({ navigation }) {
     }, [])
   );
 
+  // Update timer every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  const calculateTimeRemaining = (sessionDate, durationMinutes) => {
+    const startTime = new Date(sessionDate);
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+    const remaining = Math.floor((endTime - currentTime) / 1000);
+    
+    if (remaining <= 0) return { minutes: 0, seconds: 0, percentage: 0 };
+    
+    const totalSeconds = durationMinutes * 60;
+    const percentage = (remaining / totalSeconds) * 100;
+    
+    return {
+      minutes: Math.floor(remaining / 60),
+      seconds: remaining % 60,
+      percentage: Math.max(0, Math.min(100, percentage))
+    };
+  };
+
+  const renderCircularTimer = (sessionDate, durationMinutes) => {
+    const { minutes, seconds, percentage } = calculateTimeRemaining(sessionDate, durationMinutes);
+    
+    return (
+      <View style={styles.timerContainer}>
+        <View style={styles.timerCircle}>
+          <View style={[styles.timerFill, { 
+            transform: [{ rotate: `${(percentage / 100) * 360}deg` }] 
+          }]} />
+          <View style={styles.timerInner}>
+            <Text style={styles.timerText}>{minutes}:{seconds.toString().padStart(2, '0')}</Text>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   const renderCourse = ({ item }) => {
@@ -67,11 +111,22 @@ export default function StudentDashboard({ navigation }) {
     
     return (
       <View style={styles.courseCard}>
-        {activeSession && (
-          <View style={styles.liveBadge}>
-            <Text style={styles.liveText}>🔴 LIVE SESSION</Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            {activeSession && (
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveText}>🔴 LIVE SESSION</Text>
+              </View>
+            )}
           </View>
-        )}
+          
+          {/* Circular timer at top right */}
+          {activeSession && !attendanceMarked && (
+            <View style={styles.cardHeaderRight}>
+              {renderCircularTimer(activeSession.session_date, activeSession.duration_minutes)}
+            </View>
+          )}
+        </View>
         
         {/* Green attendance banner */}
         {activeSession && attendanceMarked && (
@@ -90,13 +145,13 @@ export default function StudentDashboard({ navigation }) {
         </View>
 
         <View style={styles.buttonRow}>
-          {/* Only show Join Session if attendance NOT marked */}
+          {/* Show Mark Attendance if attendance NOT marked */}
           {activeSession && !attendanceMarked && (
             <TouchableOpacity
               style={styles.joinButton}
               onPress={() => navigation.navigate('JoinSession', { session: activeSession })}
             >
-              <Text style={styles.joinButtonText}>Join Session</Text>
+              <Text style={styles.joinButtonText}>📍 Mark Attendance</Text>
             </TouchableOpacity>
           )}
           
@@ -247,11 +302,23 @@ const styles = StyleSheet.create({
   },
   courseCard: {
     backgroundColor: COLORS.darkGray,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  cardHeaderLeft: {
+    flex: 1,
+  },
+  cardHeaderRight: {
+    marginLeft: 12,
   },
   liveBadge: {
     backgroundColor: COLORS.danger,
@@ -259,7 +326,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 12,
+  },
+  timerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+  },
+  timerInner: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.white,
   },
   liveText: {
     color: COLORS.white,
