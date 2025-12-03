@@ -4,6 +4,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
 
+// Import routes
+const authRoutes = require('./routes/auth');
+const classRoutes = require('./routes/classes');
+const sessionRoutes = require('./routes/sessions');
+const attendanceRoutes = require('./routes/attendance');
+const { runMigrations } = require('./config/migrate');
+
 const app = express();
 
 // Middleware
