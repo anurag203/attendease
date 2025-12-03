@@ -28,7 +28,16 @@ export default function StudentDashboard({ navigation }) {
         courseAPI.getCourses(),
         sessionAPI.getActiveSessions(),
       ]);
-      setCourses(coursesRes.data.data || []);
+      
+      const coursesData = coursesRes.data.data || [];
+      console.log('📚 Student Profile:', { 
+        degree: user?.degree, 
+        branch: user?.branch, 
+        year: user?.year 
+      });
+      console.log('📚 Courses Received:', coursesData.length, coursesData);
+      
+      setCourses(coursesData);
       setActiveSessions(sessionsRes.data.data || []);
     } catch (error) {
       console.error('Fetch data error:', error);

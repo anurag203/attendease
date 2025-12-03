@@ -59,9 +59,18 @@ exports.getCourses = async (req, res) => {
         ORDER BY c.created_at DESC
       `;
       params = [req.user.degree, req.user.branch, req.user.year];
+      console.log('🔍 Student Query:', { 
+        degree: req.user.degree, 
+        branch: req.user.branch, 
+        year: req.user.year 
+      });
     }
 
     const result = await pool.query(query, params);
+    
+    if (req.user.role === 'student') {
+      console.log('📚 Courses found for student:', result.rows.length, result.rows);
+    }
 
     res.status(200).json({
       success: true,
