@@ -186,15 +186,6 @@ export default function TeacherDashboard({ navigation }) {
         <Text style={styles.fabIcon}>+</Text>
         <Text style={styles.fabText}>Add Course</Text>
       </TouchableOpacity>
-
-      {/* Overlay to close menu */}
-      {menuVisible && (
-        <View
-          style={styles.fullScreenOverlay}
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={() => setMenuVisible(null)}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -203,14 +194,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  fullScreenOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
   },
   header: {
     flexDirection: 'row',
