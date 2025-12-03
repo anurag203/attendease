@@ -22,7 +22,6 @@ export default function TeacherDashboard({ navigation }) {
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(null);
 
   // Refresh courses when screen comes into focus
   useFocusEffect(
@@ -90,85 +89,42 @@ export default function TeacherDashboard({ navigation }) {
     const activeSession = activeSessions.find(s => s.course_id === course.id);
     
     return (
-      <View style={{ marginBottom: 16 }}>
-        <TouchableOpacity
-          style={styles.courseCard}
-          onPress={() => {
-            if (menuVisible === course.id) {
-              setMenuVisible(null);
-            } else {
-              navigation.navigate('CourseDetails', { course });
-            }
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.courseInfo}>
-              <Text style={styles.courseName}>{course.course_name}</Text>
-              <Text style={styles.courseCode}>#{course.course_code}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                setMenuVisible(menuVisible === course.id ? null : course.id);
-              }}
-            >
-              <Text style={styles.menuDots}>⋮</Text>
-            </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.courseCard}
+        onPress={() => navigation.navigate('CourseDetails', { course })}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.courseInfo}>
+            <Text style={styles.courseName}>{course.course_name}</Text>
+            <Text style={styles.courseCode}>#{course.course_code}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteCourse(course.id);
+            }}
+          >
+            <Text style={styles.deleteIcon}>🗑️</Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.cardDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>🎓</Text>
-              <Text style={styles.detailText}>{course.degree}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>📖</Text>
-              <Text style={styles.detailText}>{course.branch}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>📅</Text>
-              <Text style={styles.detailText}>Year {course.year}</Text>
-            </View>
+        <View style={styles.cardDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>🎓</Text>
+            <Text style={styles.detailText}>{course.degree}</Text>
           </View>
-        </TouchableOpacity>
-
-        {/* Three-dot menu - OUTSIDE TouchableOpacity */}
-        {menuVisible === course.id && (
-          <View style={styles.menuOverlay} pointerEvents="box-none">
-            <TouchableOpacity
-              style={styles.menuOption}
-              onPress={() => {
-                setMenuVisible(null);
-                navigation.navigate('EditStudents', { course });
-              }}
-            >
-              <Text style={styles.menuOptionText}>✏️ Edit Students</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuOption}
-              onPress={() => {
-                setMenuVisible(null);
-                navigation.navigate('CourseDetails', { course });
-              }}
-            >
-              <Text style={styles.menuOptionText}>📊 View Details</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.menuOption, styles.menuOptionDanger]}
-              onPress={() => {
-                setMenuVisible(null);
-                handleDeleteCourse(course.id);
-              }}
-            >
-              <Text style={[styles.menuOptionText, styles.menuOptionTextDanger]}>
-                🗑️ Delete
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>📖</Text>
+            <Text style={styles.detailText}>{course.branch}</Text>
           </View>
-        )}
-      </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>📅</Text>
+            <Text style={styles.detailText}>Year {course.year}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -294,15 +250,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.darkGray,
     borderRadius: 16,
     padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
-    position: 'relative',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
   },
   courseInfo: {
     flex: 1,
@@ -318,14 +273,15 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-  menuButton: {
-    padding: 4,
-    marginLeft: 8,
+  deleteButton: {
+    padding: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
-  menuDots: {
-    fontSize: 24,
-    color: COLORS.white,
-    fontWeight: 'bold',
+  deleteIcon: {
+    fontSize: 20,
   },
   cardDetails: {
     flexDirection: 'row',
@@ -348,39 +304,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.lightGray,
     fontWeight: '500',
-  },
-  menuOverlay: {
-    position: 'absolute',
-    top: 50,
-    right: 16,
-    backgroundColor: COLORS.darkGray,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 1000,
-    zIndex: 10000,
-    minWidth: 180,
-  },
-  menuOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.mediumGray,
-  },
-  menuOptionText: {
-    fontSize: 15,
-    color: COLORS.white,
-    fontWeight: '500',
-  },
-  menuOptionDanger: {
-    borderBottomWidth: 0,
-  },
-  menuOptionTextDanger: {
-    color: '#ef4444',
   },
   fab: {
     position: 'absolute',
@@ -432,33 +355,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.lightGray,
     textAlign: 'center',
-  },
-  activeSessionBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#dc2626',
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 12,
-    padding: 12,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  activeSessionText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  resumeButton: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  resumeButtonText: {
-    color: '#dc2626',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });
