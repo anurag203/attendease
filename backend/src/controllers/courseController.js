@@ -55,14 +55,17 @@ exports.getCourses = async (req, res) => {
                u.email as teacher_email
         FROM courses c
         JOIN users u ON c.teacher_id = u.id
-        WHERE c.degree = $1 AND c.branch = $2 AND c.year = $3
+        WHERE TRIM(c.degree) = TRIM($1) 
+          AND TRIM(c.branch) = TRIM($2) 
+          AND c.year::text = $3::text
         ORDER BY c.created_at DESC
       `;
-      params = [req.user.degree, req.user.branch, req.user.year];
+      params = [req.user.degree, req.user.branch, req.user.year.toString()];
       console.log('🔍 Student Query:', { 
         degree: req.user.degree, 
         branch: req.user.branch, 
-        year: req.user.year 
+        year: req.user.year,
+        yearAsString: req.user.year.toString()
       });
     }
 

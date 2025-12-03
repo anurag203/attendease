@@ -5,7 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  
+  ScrollView,
   RefreshControl,
   Alert,
 } from 'react-native';
@@ -127,11 +127,21 @@ export default function StudentDashboard({ navigation }) {
       )}
 
       {loading ? (
-        <View style={styles.centerContainer}>
+        <ScrollView
+          contentContainerStyle={styles.centerContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+        >
           <Text style={styles.loadingText}>Loading courses...</Text>
-        </View>
+        </ScrollView>
       ) : courses.length === 0 ? (
-        <View style={styles.centerContainer}>
+        <ScrollView
+          contentContainerStyle={styles.centerContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+        >
           <Text style={styles.emptyText}>No courses found</Text>
           <Text style={styles.emptySubtext}>
             Courses will appear based on your degree, branch, and year
@@ -139,7 +149,7 @@ export default function StudentDashboard({ navigation }) {
           <Text style={styles.refreshHint}>
             👇 Pull down to refresh
           </Text>
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={courses}
