@@ -227,11 +227,16 @@ exports.addStudentToCourse = async (req, res) => {
 
     const student = studentResult.rows[0];
 
-    // For now, we'll just update the student's degree/branch/year to match the course
-    // In a production app, you'd want a separate course_enrollments table
+    // Update the student's degree/branch/year to match the course
     await pool.query(
       'UPDATE users SET degree = $1, branch = $2, year = $3 WHERE id = $4',
       [courseResult.rows[0].degree, courseResult.rows[0].branch, courseResult.rows[0].year, student.id]
+    );
+
+    // Remove from exclusions table if they were previously removed
+    await pool.query(
+      'DELETE FROM course_exclusions WHERE course_id = $1 AND student_id = $2',
+      [id, student.id]
     );
 
     res.status(200).json({
