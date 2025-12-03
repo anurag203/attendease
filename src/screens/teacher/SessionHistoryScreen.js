@@ -48,6 +48,27 @@ export default function SessionHistoryScreen({ navigation, route }) {
     });
   };
 
+  const formatDuration = (session) => {
+    // If session has ended_at, calculate actual duration
+    if (session.ended_at && session.session_date) {
+      const startTime = new Date(session.session_date);
+      const endTime = new Date(session.ended_at);
+      const durationSeconds = Math.floor((endTime - startTime) / 1000);
+      
+      const minutes = Math.floor(durationSeconds / 60);
+      const seconds = durationSeconds % 60;
+      
+      if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+      } else {
+        return `${seconds}s`;
+      }
+    }
+    
+    // Fallback to duration_minutes if no ended_at
+    return `${session.duration_minutes} min`;
+  };
+
   const viewStudents = async (session) => {
     setSelectedSession(session);
     setLoadingStudents(true);
@@ -146,7 +167,7 @@ export default function SessionHistoryScreen({ navigation, route }) {
           <Text style={styles.statLabel}>Students</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>{item.duration_minutes} min</Text>
+          <Text style={styles.statValue}>{formatDuration(item)}</Text>
           <Text style={styles.statLabel}>Duration</Text>
         </View>
       </View>
