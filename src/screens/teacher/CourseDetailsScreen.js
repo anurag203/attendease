@@ -157,7 +157,10 @@ export default function CourseDetailsScreen({ navigation, route }) {
 
         <TouchableOpacity
           style={styles.secondaryButton}
-          onPress={() => navigation.navigate('SessionHistory', { course })}
+          onPress={() => navigation.navigate('SessionHistory', { 
+            courseId: course.id, 
+            courseName: course.course_name 
+          })}
         >
           <Text style={styles.buttonIcon}>📊</Text>
           <Text style={styles.secondaryButtonText}>Attendance History</Text>
