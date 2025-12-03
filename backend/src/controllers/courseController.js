@@ -66,12 +66,14 @@ exports.getCourses = async (req, res) => {
                u.email as teacher_email
         FROM courses c
         JOIN users u ON c.teacher_id = u.id
+        LEFT JOIN course_exclusions ce ON c.id = ce.course_id AND ce.student_id = $4
         WHERE TRIM(c.degree) = TRIM($1) 
           AND TRIM(c.branch) = TRIM($2) 
           AND c.year::text = $3::text
+          AND ce.id IS NULL
         ORDER BY c.created_at DESC
       `;
-      params = [req.user.degree, req.user.branch, String(req.user.year)];
+      params = [req.user.degree, req.user.branch, String(req.user.year), req.user.id];
       console.log('🔍 Student Query:', { 
         degree: req.user.degree, 
         branch: req.user.branch, 
@@ -111,16 +113,18 @@ exports.getCourse = async (req, res) => {
 
     const course = courseResult.rows[0];
 
-    // Get students for this course
+    // Get students for this course (excluding manually removed students)
     const studentsResult = await pool.query(
-      `SELECT id, student_id, full_name, email, degree, branch, year
-       FROM users
-       WHERE role = 'student' 
-         AND degree = $1 
-         AND branch = $2 
-         AND year = $3
-       ORDER BY full_name`,
-      [course.degree, course.branch, course.year]
+      `SELECT u.id, u.student_id, u.full_name, u.email, u.degree, u.branch, u.year
+       FROM users u
+       LEFT JOIN course_exclusions ce ON u.id = ce.student_id AND ce.course_id = $4
+       WHERE u.role = 'student' 
+         AND u.degree = $1 
+         AND u.branch = $2 
+         AND u.year = $3
+         AND ce.id IS NULL
+       ORDER BY u.full_name`,
+      [course.degree, course.branch, course.year, id]
     );
 
     res.status(200).json({
@@ -257,9 +261,13 @@ exports.removeStudentFromCourse = async (req, res) => {
       return res.status(404).json({ error: 'Course not found or unauthorized' });
     }
 
-    // Note: In production, you'd remove from course_enrollments table
-    // For now, this is a placeholder - we can't actually "remove" students
-    // from auto-enrollment without a separate enrollments table
+    // Add to exclusions table so student won't see this course
+    await pool.query(
+      `INSERT INTO course_exclusions (course_id, student_id) 
+       VALUES ($1, $2) 
+       ON CONFLICT (course_id, student_id) DO NOTHING`,
+      [courseId, studentId]
+    );
 
     res.status(200).json({
       success: true,

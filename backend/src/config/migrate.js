@@ -64,6 +64,17 @@ const createTables = async () => {
       );
     `);
 
+    // Course exclusions table (for manually removed students)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS course_exclusions (
+        id SERIAL PRIMARY KEY,
+        course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
+        student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        excluded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(course_id, student_id)
+      );
+    `);
+
     // Create indexes
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
