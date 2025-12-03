@@ -7,24 +7,47 @@ let BluetoothStateManager, RNBluetoothClassic;
 let USE_REAL_BLUETOOTH = false;
 
 try {
-  BluetoothStateManager = require('react-native-bluetooth-state-manager').default;
-  RNBluetoothClassic = require('react-native-bluetooth-classic').default;
-  USE_REAL_BLUETOOTH = true;
-  console.log('✅ Real Bluetooth libraries loaded');
+  // Try different import methods
+  const BTStateModule = require('react-native-bluetooth-state-manager');
+  const BTClassicModule = require('react-native-bluetooth-classic');
+  
+  // Handle both default and named exports
+  BluetoothStateManager = BTStateModule.default || BTStateModule;
+  RNBluetoothClassic = BTClassicModule.default || BTClassicModule;
+  
+  // Verify the modules loaded correctly
+  if (BluetoothStateManager && RNBluetoothClassic) {
+    USE_REAL_BLUETOOTH = true;
+    console.log('✅ Real Bluetooth libraries loaded successfully!');
+    console.log('BluetoothStateManager methods:', Object.keys(BluetoothStateManager));
+  } else {
+    throw new Error('Modules loaded but objects are undefined');
+  }
 } catch (error) {
-  console.log('⚠️ Using Bluetooth mocks (Expo Go mode)');
-  // Mock implementations for Expo Go
+  console.log('⚠️ Bluetooth library error:', error.message);
+  console.log('⚠️ Using Bluetooth mocks');
+  
+  // Mock implementations for Expo Go or if native modules fail
   BluetoothStateManager = {
-    getState: async () => 'PoweredOn',
-    requestToEnable: async () => true,
+    getState: async () => {
+      console.log('📱 Mock: Getting Bluetooth state');
+      return 'PoweredOn';
+    },
+    requestToEnable: async () => {
+      console.log('📱 Mock: Requesting to enable Bluetooth');
+      Alert.alert('Mock Mode', 'Bluetooth mocks are active. Real Bluetooth will work in production APK.');
+      return true;
+    },
   };
 
   RNBluetoothClassic = {
     getBondedDevices: async () => {
+      console.log('📱 Mock: Getting bonded devices');
       // Simulate device address for testing
       return [{ address: Platform.OS === 'android' ? 'DEVICE-' + Date.now().toString().slice(-8) : 'SIM-DEVICE' }];
     },
     startDiscovery: async () => {
+      console.log('📱 Mock: Starting device discovery');
       // Simulate finding nearby devices for testing
       return [
         { name: 'Simulated Device 1', address: 'SIM-001' },
