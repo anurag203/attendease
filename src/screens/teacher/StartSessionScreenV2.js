@@ -125,18 +125,24 @@ export default function StartSessionScreen({ navigation, route }) {
           
           // If session is running, terminate it immediately
           if (sessionStarted && sessionId) {
+            console.log('🛑 Ending session immediately due to Bluetooth OFF');
+            
+            // End session FIRST (don't wait for user to click OK)
+            handleEndSession();
+            
+            // Then show alert and navigate back
             Alert.alert(
-              '⚠️ Bluetooth Turned OFF',
-              'Bluetooth was turned off during the session. The session will end immediately.',
+              '⚠️ Session Ended',
+              'Bluetooth was turned off. The session has been ended automatically.',
               [
                 {
                   text: 'OK',
                   onPress: () => {
-                    handleEndSession();
                     navigation.goBack();
                   }
                 }
-              ]
+              ],
+              { cancelable: false }
             );
           }
         }
