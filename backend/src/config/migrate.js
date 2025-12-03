@@ -22,7 +22,7 @@ const createTables = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-anan@1233
+
     // Courses table (replacing classes)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS courses (
