@@ -25,12 +25,12 @@ const TIME_OPTIONS = [
 ];
 
 export default function StartSessionScreen({ navigation, route }) {
-  const { course } = route.params;
+  const { course, existingSessionId } = route.params;
   const [isBluetoothOn, setIsBluetoothOn] = useState(false);
   const [deviceAddress, setDeviceAddress] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(2);
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionStarted, setSessionStarted] = useState(!!existingSessionId);
+  const [sessionId, setSessionId] = useState(existingSessionId || null);
   const [markedStudents, setMarkedStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -38,6 +38,10 @@ export default function StartSessionScreen({ navigation, route }) {
 
   useEffect(() => {
     init();
+    // If resuming existing session, load it
+    if (existingSessionId) {
+      loadExistingSession(existingSessionId);
+    }
   }, []);
 
   // Countdown timer
@@ -86,6 +90,35 @@ export default function StartSessionScreen({ navigation, route }) {
 
     // Get total students for this course
     setTotalStudents(course.student_count || 0);
+  };
+
+  const loadExistingSession = async (sessionId) => {
+    try {
+      const response = await sessionAPI.getSession(sessionId);
+      const session = response.data?.data || response.data;
+      
+      if (session) {
+        // Calculate remaining time
+        const startTime = new Date(session.start_time).getTime();
+        const durationMs = session.duration * 60 * 1000;
+        const endTime = startTime + durationMs;
+        const now = Date.now();
+        const remainingSeconds = Math.floor((endTime - now) / 1000);
+        
+        if (remainingSeconds > 0) {
+          setTimeRemaining(remainingSeconds);
+          setMarkedStudents(session.marked_students || []);
+        } else {
+          // Session has already ended
+          Alert.alert('Session Ended', 'This session has already ended');
+          navigation.goBack();
+        }
+      }
+    } catch (error) {
+      console.error('Error loading session:', error);
+      Alert.alert('Error', 'Failed to load session');
+      navigation.goBack();
+    }
   };
 
   const handleBluetoothToggle = async () => {

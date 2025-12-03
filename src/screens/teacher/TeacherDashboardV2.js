@@ -13,12 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import { courseAPI } from '../../services/api';
+import { courseAPI, sessionAPI } from '../../services/api';
 import { COLORS } from '../../utils/constants';
 
 export default function TeacherDashboard({ navigation }) {
   const { user, logout } = useAuth();
   const [courses, setCourses] = useState([]);
+  const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(null);
@@ -32,10 +33,17 @@ export default function TeacherDashboard({ navigation }) {
 
   const fetchCourses = async () => {
     try {
-      const response = await courseAPI.getMyCourses();
+      const [coursesResponse, sessionsResponse] = await Promise.all([
+        courseAPI.getMyCourses(),
+        sessionAPI.getActiveSessions(),
+      ]);
+      
       // Handle both response.data and response.data.data formats
-      const coursesData = response.data?.data || response.data;
+      const coursesData = coursesResponse.data?.data || coursesResponse.data;
+      const sessionsData = sessionsResponse.data?.data || sessionsResponse.data || [];
+      
       setCourses(Array.isArray(coursesData) ? coursesData : []);
+      setActiveSessions(Array.isArray(sessionsData) ? sessionsData : []);
     } catch (error) {
       console.error('Error fetching courses:', error);
       Alert.alert('Error', 'Failed to load courses');
@@ -73,75 +81,99 @@ export default function TeacherDashboard({ navigation }) {
     );
   };
 
-  const CourseCard = ({ course }) => (
-    <TouchableOpacity
-      style={styles.courseCard}
-      onPress={() => navigation.navigate('CourseDetails', { course })}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.courseInfo}>
-          <Text style={styles.courseName}>{course.course_name}</Text>
-          <Text style={styles.courseCode}>#{course.course_code}</Text>
+  const CourseCard = ({ course }) => {
+    // Check if this course has an active session
+    const activeSession = activeSessions.find(s => s.course_id === course.id);
+    
+    return (
+      <TouchableOpacity
+        style={styles.courseCard}
+        onPress={() => navigation.navigate('CourseDetails', { course })}
+        activeOpacity={0.7}
+      >
+        {activeSession && (
+          <View style={styles.activeSessionBanner}>
+            <Text style={styles.activeSessionText}>🔴 SESSION ACTIVE</Text>
+            <TouchableOpacity
+              style={styles.resumeButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                navigation.navigate('StartSessionV2', { 
+                  course,
+                  existingSessionId: activeSession.id 
+                });
+              }}
+            >
+              <Text style={styles.resumeButtonText}>Resume</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <View style={styles.cardHeader}>
+          <View style={styles.courseInfo}>
+            <Text style={styles.courseName}>{course.course_name}</Text>
+            <Text style={styles.courseCode}>#{course.course_code}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setMenuVisible(course.id)}
+          >
+            <Text style={styles.menuDots}>⋮</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(course.id)}
-        >
-          <Text style={styles.menuDots}>⋮</Text>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.cardDetails}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailIcon}>🎓</Text>
-          <Text style={styles.detailText}>{course.degree}</Text>
+        <View style={styles.cardDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>🎓</Text>
+            <Text style={styles.detailText}>{course.degree}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>📖</Text>
+            <Text style={styles.detailText}>{course.branch}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>📅</Text>
+            <Text style={styles.detailText}>Year {course.year}</Text>
+          </View>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailIcon}>📖</Text>
-          <Text style={styles.detailText}>{course.branch}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailIcon}>📅</Text>
-          <Text style={styles.detailText}>Year {course.year}</Text>
-        </View>
-      </View>
 
-      {/* Three-dot menu */}
-      {menuVisible === course.id && (
-        <View style={styles.menuOverlay}>
-          <TouchableOpacity
-            style={styles.menuOption}
-            onPress={() => {
-              setMenuVisible(null);
-              navigation.navigate('EditStudents', { course });
-            }}
-          >
-            <Text style={styles.menuOptionText}>✏️ Edit Students</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuOption}
-            onPress={() => {
-              setMenuVisible(null);
-              navigation.navigate('CourseDetails', { course });
-            }}
-          >
-            <Text style={styles.menuOptionText}>📊 View Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.menuOption, styles.menuOptionDanger]}
-            onPress={() => {
-              setMenuVisible(null);
-              handleDeleteCourse(course.id);
-            }}
-          >
-            <Text style={[styles.menuOptionText, styles.menuOptionTextDanger]}>
-              🗑️ Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+        {/* Three-dot menu */}
+        {menuVisible === course.id && (
+          <View style={styles.menuOverlay}>
+            <TouchableOpacity
+              style={styles.menuOption}
+              onPress={() => {
+                setMenuVisible(null);
+                navigation.navigate('EditStudents', { course });
+              }}
+            >
+              <Text style={styles.menuOptionText}>✏️ Edit Students</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuOption}
+              onPress={() => {
+                setMenuVisible(null);
+                navigation.navigate('CourseDetails', { course });
+              }}
+            >
+              <Text style={styles.menuOptionText}>📊 View Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuOption, styles.menuOptionDanger]}
+              onPress={() => {
+                setMenuVisible(null);
+                handleDeleteCourse(course.id);
+              }}
+            >
+              <Text style={[styles.menuOptionText, styles.menuOptionTextDanger]}>
+                🗑️ Delete
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -404,5 +436,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.lightGray,
     textAlign: 'center',
+  },
+  activeSessionBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#dc2626',
+    marginHorizontal: -16,
+    marginTop: -16,
+    marginBottom: 12,
+    padding: 12,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  activeSessionText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  resumeButton: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  resumeButtonText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
