@@ -69,11 +69,15 @@ export default function TeacherDashboard({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await courseAPI.deleteCourse(courseId);
+              console.log('🗑️ Deleting course:', courseId);
+              const response = await courseAPI.deleteCourse(courseId);
+              console.log('✅ Delete response:', response.data);
               Alert.alert('Success', 'Course deleted successfully');
-              fetchCourses();
+              await fetchCourses();
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete course');
+              console.error('❌ Delete course error:', error);
+              const errorMsg = error.response?.data?.error || error.message || 'Failed to delete course';
+              Alert.alert('Error', errorMsg);
             }
           },
         },
