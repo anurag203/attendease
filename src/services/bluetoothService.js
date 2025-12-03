@@ -159,15 +159,36 @@ export const enableBluetooth = async () => {
 
 export const getDeviceAddress = async () => {
   try {
-    // Get the local device address
-    const devices = await RNBluetoothClassic.getBondedDevices();
-    if (devices && devices.length > 0) {
-      // Return first device address or implement logic to get actual device address
-      return devices[0].address;
+    // First check if Bluetooth is enabled
+    const isEnabled = await checkBluetoothState();
+    if (!isEnabled) {
+      console.log('⚠️ Cannot get device address: Bluetooth is OFF');
+      return null;
     }
-    return null;
+
+    // Try to get the local device address
+    if (RNBluetoothClassic && typeof RNBluetoothClassic.getBondedDevices === 'function') {
+      const devices = await RNBluetoothClassic.getBondedDevices();
+      if (devices && devices.length > 0) {
+        const address = devices[0].address;
+        console.log('📱 Got device address:', address);
+        return address;
+      }
+    }
+    
+    // Fallback: Try native module
+    if (NativeBluetoothModule && typeof NativeBluetoothModule.getAddress === 'function') {
+      const address = await NativeBluetoothModule.getAddress();
+      console.log('📱 Got native device address:', address);
+      return address;
+    }
+    
+    // Mock for testing (but only if Bluetooth is ON)
+    const mockAddress = 'DEVICE-' + Date.now().toString().slice(-8);
+    console.log('📱 Using mock address:', mockAddress);
+    return mockAddress;
   } catch (error) {
-    console.error('Get device address error:', error);
+    console.error('Get device address error:', error.message);
     return null;
   }
 };

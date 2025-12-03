@@ -108,11 +108,37 @@ export default function StartSessionScreen({ navigation, route }) {
         console.log('🔵 Bluetooth state changed:', isBluetoothOn, '→', state);
         setIsBluetoothOn(state);
         
-        // If Bluetooth just turned on, get device address
-        if (state && !deviceAddress) {
-          const address = await getDeviceAddress();
-          setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
-          console.log('📱 Device address:', address);
+        // If Bluetooth just turned ON
+        if (state) {
+          if (!deviceAddress) {
+            const address = await getDeviceAddress();
+            if (address) {
+              setDeviceAddress(address);
+              console.log('✅ Got device address:', address);
+            }
+          }
+        }
+        // If Bluetooth turned OFF
+        else {
+          console.log('⚠️ Bluetooth turned OFF!');
+          setDeviceAddress(null);
+          
+          // If session is running, terminate it immediately
+          if (sessionStarted && sessionId) {
+            Alert.alert(
+              '⚠️ Bluetooth Turned OFF',
+              'Bluetooth was turned off during the session. The session will end immediately.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    handleEndSession();
+                    navigation.goBack();
+                  }
+                }
+              ]
+            );
+          }
         }
       }
     };
@@ -126,7 +152,7 @@ export default function StartSessionScreen({ navigation, route }) {
     return () => {
       clearInterval(interval);
     };
-  }, [isBluetoothOn, deviceAddress]);
+  }, [isBluetoothOn, deviceAddress, sessionStarted, sessionId]);
 
   const init = async () => {
     const granted = await requestBluetoothPermissions();

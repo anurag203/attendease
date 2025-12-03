@@ -57,6 +57,16 @@ export default function JoinSessionScreen({ navigation, route }) {
       if (state !== isBluetoothOn) {
         console.log('🔵 Student Bluetooth state changed:', isBluetoothOn, '→', state);
         setIsBluetoothOn(state);
+        
+        // If Bluetooth turned OFF during scanning
+        if (!state && isBluetoothOn) {
+          Alert.alert(
+            '⚠️ Bluetooth Turned OFF',
+            'Bluetooth was turned off. Please turn it back on to continue.',
+            [{ text: 'OK' }]
+          );
+          setDevices([]);
+        }
       }
     };
 
@@ -116,16 +126,8 @@ export default function JoinSessionScreen({ navigation, route }) {
     try {
       await sessionAPI.markAttendance(session.id, { bluetooth_verified: bluetoothVerified });
       setAttendanceMarked(true);
-      Alert.alert(
-        'Success! ✅',
-        'Your attendance has been marked successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      console.log('✅ Attendance marked successfully!');
+      // Will show the big tick screen automatically
     } catch (error) {
       Alert.alert('Error', error.response?.data?.error || 'Failed to mark attendance');
     } finally {
