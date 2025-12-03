@@ -63,12 +63,21 @@ export default function StudentDashboard({ navigation }) {
 
   const renderCourse = ({ item }) => {
     const activeSession = activeSessions.find(s => s.course_id === item.id);
+    const attendanceMarked = activeSession?.attendance_marked === true;
     
     return (
       <View style={styles.courseCard}>
         {activeSession && (
           <View style={styles.liveBadge}>
             <Text style={styles.liveText}>🔴 LIVE SESSION</Text>
+          </View>
+        )}
+        
+        {/* Green attendance banner */}
+        {activeSession && attendanceMarked && (
+          <View style={styles.attendanceMarkedBanner}>
+            <Text style={styles.attendanceMarkedIcon}>✅</Text>
+            <Text style={styles.attendanceMarkedText}>Attendance Marked</Text>
           </View>
         )}
         
@@ -81,7 +90,8 @@ export default function StudentDashboard({ navigation }) {
         </View>
 
         <View style={styles.buttonRow}>
-          {activeSession && (
+          {/* Only show Join Session if attendance NOT marked */}
+          {activeSession && !attendanceMarked && (
             <TouchableOpacity
               style={styles.joinButton}
               onPress={() => navigation.navigate('JoinSession', { session: activeSession })}
@@ -91,7 +101,7 @@ export default function StudentDashboard({ navigation }) {
           )}
           
           <TouchableOpacity
-            style={[styles.historyButton, activeSession && { flex: 1 }]}
+            style={[styles.historyButton, (activeSession && !attendanceMarked) && { flex: 1 }]}
             onPress={() => navigation.navigate('CourseHistory', { 
               course: item
             })}
@@ -254,6 +264,23 @@ const styles = StyleSheet.create({
   liveText: {
     color: COLORS.white,
     fontSize: 12,
+    fontWeight: '600',
+  },
+  attendanceMarkedBanner: {
+    backgroundColor: COLORS.secondary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  attendanceMarkedIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  attendanceMarkedText: {
+    color: COLORS.white,
+    fontSize: 14,
     fontWeight: '600',
   },
   courseName: {

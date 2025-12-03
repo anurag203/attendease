@@ -81,17 +81,19 @@ exports.getActiveSessions = async (req, res) => {
       `;
       params = [req.user.id];
     } else {
-      // Get active sessions for student's courses
+      // Get active sessions for student's courses with attendance status
       query = `
-        SELECT s.*, c.course_name, c.course_code, u.full_name as teacher_name
+        SELECT s.*, c.course_name, c.course_code, u.full_name as teacher_name,
+               CASE WHEN a.id IS NOT NULL THEN true ELSE false END as attendance_marked
         FROM attendance_sessions s
         JOIN courses c ON s.course_id = c.id
         JOIN users u ON s.teacher_id = u.id
+        LEFT JOIN attendance a ON s.id = a.session_id AND a.student_id = $4
         WHERE c.degree = $1 AND c.branch = $2 AND c.year = $3 
           AND s.status = 'active'
         ORDER BY s.created_at DESC
       `;
-      params = [req.user.degree, req.user.branch, req.user.year];
+      params = [req.user.degree, req.user.branch, req.user.year, req.user.id];
     }
 
     const result = await pool.query(query, params);
