@@ -24,6 +24,7 @@ import EditStudentsScreen from './src/screens/teacher/EditStudentsScreen';
 import StudentDashboard from './src/screens/student/StudentDashboard';
 import JoinSessionScreen from './src/screens/student/JoinSessionScreen';
 import AttendanceHistoryScreen from './src/screens/student/AttendanceHistoryScreen';
+import CourseHistoryScreen from './src/screens/student/CourseHistoryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -72,6 +73,7 @@ function StudentStack() {
       <Stack.Screen name="StudentDashboard" component={StudentDashboard} />
       <Stack.Screen name="JoinSession" component={JoinSessionScreen} />
       <Stack.Screen name="AttendanceHistory" component={AttendanceHistoryScreen} />
+      <Stack.Screen name="CourseHistory" component={CourseHistoryScreen} />
     </Stack.Navigator>
   );
 }

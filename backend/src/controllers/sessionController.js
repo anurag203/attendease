@@ -323,6 +323,44 @@ exports.deleteSession = async (req, res) => {
   }
 };
 
+// @desc    Get student course history
+// @route   GET /api/sessions/course/:courseId/student-history
+exports.getStudentCourseHistory = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const student_id = req.user.id;
+
+    const result = await pool.query(
+      `SELECT 
+        s.id,
+        s.session_date,
+        s.ended_at,
+        s.duration_minutes,
+        s.status,
+        CASE 
+          WHEN a.id IS NOT NULL THEN true 
+          ELSE false 
+        END as attended,
+        a.marked_at,
+        a.bluetooth_verified
+       FROM attendance_sessions s
+       LEFT JOIN attendance a ON s.id = a.session_id AND a.student_id = $1
+       WHERE s.course_id = $2
+       ORDER BY s.session_date DESC`,
+      [student_id, courseId]
+    );
+
+    res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('Get student course history error:', error);
+    res.status(500).json({ error: 'Server error while fetching history' });
+  }
+};
+
 // @desc    Get student attendance stats
 // @route   GET /api/sessions/student/stats
 exports.getStudentStats = async (req, res) => {

@@ -9,6 +9,7 @@ const {
   getStudentStats,
   deleteAttendance,
   deleteSession,
+  getStudentCourseHistory,
 } = require('../controllers/sessionController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -18,6 +19,7 @@ router.post('/start', protect, authorize('teacher'), startSession);
 router.get('/active', protect, getActiveSessions);
 router.get('/student/stats', protect, authorize('student'), getStudentStats);
 router.get('/course/:courseId/history', protect, getCourseHistory);
+router.get('/course/:courseId/student-history', protect, authorize('student'), getStudentCourseHistory);
 router.get('/:id', protect, getSession);
 router.post('/:id/mark', protect, authorize('student'), markAttendance);
 router.post('/:id/end', protect, authorize('teacher'), endSession);

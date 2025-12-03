@@ -68,6 +68,7 @@ export const sessionAPI = {
   getStudentStats: (courseId) => api.get('/sessions/student/stats', { params: { course_id: courseId } }),
   deleteAttendance: (attendanceId) => api.delete(`/sessions/attendance/${attendanceId}`),
   deleteSession: (sessionId) => api.delete(`/sessions/${sessionId}`),
+  getStudentCourseHistory: (courseId) => api.get(`/sessions/course/${courseId}/student-history`),
 };
 
 export default api;

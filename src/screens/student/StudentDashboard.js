@@ -92,12 +92,11 @@ export default function StudentDashboard({ navigation }) {
           
           <TouchableOpacity
             style={[styles.historyButton, activeSession && { flex: 1 }]}
-            onPress={() => navigation.navigate('AttendanceHistory', { 
-              courseId: item.id, 
-              courseName: item.course_name 
+            onPress={() => navigation.navigate('CourseHistory', { 
+              course: item
             })}
           >
-            <Text style={styles.historyButtonText}>View History</Text>
+            <Text style={styles.historyButtonText}>📅 View History</Text>
           </TouchableOpacity>
         </View>
       </View>
