@@ -49,6 +49,17 @@ exports.getCourses = async (req, res) => {
       params = [req.user.id];
     } else {
       // Student - get courses based on their degree, branch, year
+      if (!req.user.degree || !req.user.branch || req.user.year == null) {
+        return res.status(400).json({ 
+          error: 'Student profile incomplete. Please update your degree, branch, and year.',
+          missing: {
+            degree: !req.user.degree,
+            branch: !req.user.branch,
+            year: req.user.year == null
+          }
+        });
+      }
+      
       query = `
         SELECT c.*, 
                u.full_name as teacher_name,
@@ -66,7 +77,7 @@ exports.getCourses = async (req, res) => {
         branch: req.user.branch, 
         year: req.user.year,
         yearType: typeof req.user.year,
-        yearAsString: String(req.user.year)
+        params: params
       });
     }
 
