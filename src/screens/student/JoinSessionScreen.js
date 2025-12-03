@@ -44,18 +44,18 @@ export default function JoinSessionScreen({ navigation, route }) {
   useEffect(() => {
     let interval;
     if (isBluetoothOn && !attendanceMarked) {
-      // Scan every 5 seconds
+      // Scan every 10 seconds (reduced frequency to avoid conflicts)
       interval = setInterval(() => {
         scanForTeacher();
-      }, 5000);
+      }, 10000);
       
-      // Initial scan
-      scanForTeacher();
+      // Initial scan after 1 second delay
+      setTimeout(() => {
+        scanForTeacher();
+      }, 1000);
     } else {
       // Cancel discovery when Bluetooth turns off or attendance marked
-      RNBluetoothClassic.cancelDiscovery().catch(err => 
-        console.log('Cancel discovery (ignored):', err.message)
-      );
+      RNBluetoothClassic.cancelDiscovery().catch(() => {});
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -89,8 +89,8 @@ export default function JoinSessionScreen({ navigation, route }) {
     // Check immediately
     checkBluetoothContinuously();
 
-    // Then check every 1.5 seconds
-    const interval = setInterval(checkBluetoothContinuously, 1500);
+    // Then check every 3 seconds (reduced to avoid conflicts with discovery)
+    const interval = setInterval(checkBluetoothContinuously, 3000);
 
     return () => {
       clearInterval(interval);
@@ -116,19 +116,28 @@ export default function JoinSessionScreen({ navigation, route }) {
   };
 
   const scanForTeacher = async () => {
-    if (!isBluetoothOn || isScanning) return;
+    // Skip if already scanning or Bluetooth is off
+    if (!isBluetoothOn || isScanning) {
+      console.log('⏭️ Skipping scan (already in progress or BT off)');
+      return;
+    }
 
     setIsScanning(true);
     try {
       const foundDevices = await discoverNearbyDevices();
-      setDevices(foundDevices);
-
-      // Check if teacher's device is nearby
-      const teacherNearby = isDeviceNearby(foundDevices, session.teacher_bluetooth_address);
       
-      if (teacherNearby && !attendanceMarked) {
-        // Auto-mark attendance
-        await markAttendance(true);
+      // Only update devices if we got results
+      if (foundDevices && foundDevices.length > 0) {
+        setDevices(foundDevices);
+
+        // Check if teacher's device is nearby
+        const teacherNearby = isDeviceNearby(foundDevices, session.teacher_bluetooth_address);
+        
+        if (teacherNearby && !attendanceMarked) {
+          console.log('✅ Teacher device found! Auto-marking attendance...');
+          // Auto-mark attendance
+          await markAttendance(true);
+        }
       }
     } catch (error) {
       console.error('Scan error:', error);

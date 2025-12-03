@@ -217,21 +217,16 @@ export const getDeviceAddress = async () => {
 
 export const discoverNearbyDevices = async () => {
   try {
-    // Cancel any ongoing discovery first
+    // Always try to cancel first (ignore errors)
     try {
-      const isDiscovering = await RNBluetoothClassic.isDiscovering();
-      if (isDiscovering) {
-        console.log('🔍 Canceling existing discovery...');
-        await RNBluetoothClassic.cancelDiscovery();
-        // Wait a bit for cancellation to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      await RNBluetoothClassic.cancelDiscovery();
+      // Wait a bit for cancellation to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (cancelError) {
-      console.log('⚠️ Cancel discovery error (ignoring):', cancelError.message);
+      // Ignore - discovery might not be running
     }
 
     // Start fresh discovery
-    console.log('🔍 Starting new discovery...');
     const found = await RNBluetoothClassic.startDiscovery();
     
     // Remove duplicates
@@ -241,11 +236,15 @@ export const discoverNearbyDevices = async () => {
     });
 
     const uniqueDevices = Object.values(uniqueDevicesMap);
-    console.log(`✅ Found ${uniqueDevices.length} unique devices`);
+    console.log(`✅ Found ${uniqueDevices.length} devices`);
     return uniqueDevices;
   } catch (error) {
+    if (error.message.includes('already in discovery')) {
+      // Just return empty, next scan will work
+      console.log('⏭️ Skipping scan (already in progress)');
+      return [];
+    }
     console.error('Discovery error:', error.message);
-    // Return empty array instead of throwing
     return [];
   }
 };
