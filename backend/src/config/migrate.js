@@ -77,11 +77,30 @@ anan@1233
     `);
 
     console.log('✅ Database migrations completed successfully!');
-    process.exit(0);
   } catch (error) {
     console.error('❌ Migration error:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-createTables();
+// Export for use in server.js
+const runMigrations = async () => {
+  try {
+    await createTables();
+  } catch (error) {
+    console.error('Failed to run migrations:', error);
+    throw error;
+  }
+};
+
+// Run migrations if this file is executed directly
+if (require.main === module) {
+  createTables()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('Migration failed:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { runMigrations };
