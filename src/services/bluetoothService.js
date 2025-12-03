@@ -1,17 +1,38 @@
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
-// import BluetoothStateManager from 'react-native-bluetooth-state-manager';
-// import RNBluetoothClassic from 'react-native-bluetooth-classic';
+import { DeviceEventEmitter } from 'react-native';
 
-// Mock implementations for Expo Go
-const BluetoothStateManager = {
-  getState: async () => 'PoweredOn',
-  requestToEnable: async () => true,
-};
+// Try to import real Bluetooth libraries (for dev builds/APKs)
+// If they fail (Expo Go), use mocks
+let BluetoothStateManager, RNBluetoothClassic;
+let USE_REAL_BLUETOOTH = false;
 
-const RNBluetoothClassic = {
-  getBondedDevices: async () => [],
-  startDiscovery: async () => [],
-};
+try {
+  BluetoothStateManager = require('react-native-bluetooth-state-manager').default;
+  RNBluetoothClassic = require('react-native-bluetooth-classic').default;
+  USE_REAL_BLUETOOTH = true;
+  console.log('✅ Real Bluetooth libraries loaded');
+} catch (error) {
+  console.log('⚠️ Using Bluetooth mocks (Expo Go mode)');
+  // Mock implementations for Expo Go
+  BluetoothStateManager = {
+    getState: async () => 'PoweredOn',
+    requestToEnable: async () => true,
+  };
+
+  RNBluetoothClassic = {
+    getBondedDevices: async () => {
+      // Simulate device address for testing
+      return [{ address: Platform.OS === 'android' ? 'DEVICE-' + Date.now().toString().slice(-8) : 'SIM-DEVICE' }];
+    },
+    startDiscovery: async () => {
+      // Simulate finding nearby devices for testing
+      return [
+        { name: 'Simulated Device 1', address: 'SIM-001' },
+        { name: 'Simulated Device 2', address: 'SIM-002' },
+      ];
+    },
+  };
+}
 
 export const requestBluetoothPermissions = async () => {
   if (Platform.OS === 'android') {

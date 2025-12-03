@@ -11,7 +11,16 @@
       "backgroundColor": "#0f172a"
     },
     "android": {
-      "package": "com.mnit.attendease"
+      "package": "com.mnit.attendease",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADVERTISE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "extra": {
       "eas": {
