@@ -98,9 +98,16 @@ export default function StartSessionScreen({ navigation, route }) {
       const session = response.data?.data || response.data;
       
       if (session) {
+        // Check if session is still active
+        if (session.status === 'ended') {
+          Alert.alert('Session Ended', 'This session has already ended');
+          navigation.goBack();
+          return;
+        }
+
         // Calculate remaining time
-        const startTime = new Date(session.start_time).getTime();
-        const durationMs = session.duration * 60 * 1000;
+        const startTime = new Date(session.session_date).getTime();
+        const durationMs = session.duration_minutes * 60 * 1000;
         const endTime = startTime + durationMs;
         const now = Date.now();
         const remainingSeconds = Math.floor((endTime - now) / 1000);
