@@ -1,10 +1,14 @@
-import { PermissionsAndroid, Platform, Alert } from 'react-native';
+import { PermissionsAndroid, Platform, Alert, NativeModules, Linking } from 'react-native';
 import { DeviceEventEmitter } from 'react-native';
 
 // Try to import real Bluetooth libraries (for dev builds/APKs)
 // If they fail (Expo Go), use mocks
 let BluetoothStateManager, RNBluetoothClassic;
 let USE_REAL_BLUETOOTH = false;
+let USE_NATIVE_ANDROID = false;
+
+// Try to get native Android Bluetooth adapter as fallback
+const { RNBluetoothClassic: NativeBluetoothModule } = NativeModules;
 
 try {
   // Try different import methods
@@ -90,10 +94,46 @@ export const checkBluetoothState = async () => {
 
 export const enableBluetooth = async () => {
   try {
-    await BluetoothStateManager.requestToEnable();
-    return true;
+    // Try using the library method first
+    if (BluetoothStateManager && typeof BluetoothStateManager.requestToEnable === 'function') {
+      await BluetoothStateManager.requestToEnable();
+      return true;
+    }
+    
+    // Fallback: Open Android Bluetooth settings
+    if (Platform.OS === 'android') {
+      Alert.alert(
+        'Enable Bluetooth',
+        'Please enable Bluetooth from your device settings',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Settings',
+            onPress: async () => {
+              try {
+                await Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS');
+              } catch (err) {
+                await Linking.openSettings();
+              }
+            }
+          }
+        ]
+      );
+      return false;
+    }
+    
+    return false;
   } catch (error) {
     console.error('Enable Bluetooth error:', error);
+    
+    // Final fallback: Open settings
+    Alert.alert(
+      'Bluetooth Error',
+      'Cannot enable Bluetooth automatically. Please enable it manually.',
+      [
+        { text: 'OK', onPress: () => Linking.openSettings() }
+      ]
+    );
     return false;
   }
 };
