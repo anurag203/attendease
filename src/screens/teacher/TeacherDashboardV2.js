@@ -91,24 +91,6 @@ export default function TeacherDashboard({ navigation }) {
         onPress={() => navigation.navigate('CourseDetails', { course })}
         activeOpacity={0.7}
       >
-        {activeSession && (
-          <View style={styles.activeSessionBanner}>
-            <Text style={styles.activeSessionText}>🔴 SESSION ACTIVE</Text>
-            <TouchableOpacity
-              style={styles.resumeButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                navigation.navigate('StartSessionV2', { 
-                  course,
-                  existingSessionId: activeSession.id 
-                });
-              }}
-            >
-              <Text style={styles.resumeButtonText}>Resume</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        
         <View style={styles.cardHeader}>
           <View style={styles.courseInfo}>
             <Text style={styles.courseName}>{course.course_name}</Text>

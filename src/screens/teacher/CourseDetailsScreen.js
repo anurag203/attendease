@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { courseAPI } from '../../services/api';
+import { courseAPI, sessionAPI } from '../../services/api';
 import { COLORS } from '../../utils/constants';
 
 export default function CourseDetailsScreen({ navigation, route }) {
@@ -20,10 +20,12 @@ export default function CourseDetailsScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [addStudentModal, setAddStudentModal] = useState(false);
   const [studentId, setStudentId] = useState('');
+  const [activeSession, setActiveSession] = useState(null);
 
   useEffect(() => {
     if (initialCourse?.id) {
       fetchCourse();
+      checkActiveSession();
     }
   }, []);
 
@@ -36,6 +38,30 @@ export default function CourseDetailsScreen({ navigation, route }) {
       console.error('Fetch course error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkActiveSession = async () => {
+    try {
+      const response = await sessionAPI.getActiveSessions();
+      const sessions = response.data.data || [];
+      const session = sessions.find(s => s.course_id === course.id);
+      setActiveSession(session);
+    } catch (error) {
+      console.error('Check active session error:', error);
+    }
+  };
+
+  const handleStartSession = () => {
+    if (activeSession) {
+      // Navigate directly to active session
+      navigation.navigate('StartSessionV2', { 
+        course,
+        existingSessionId: activeSession.id 
+      });
+    } else {
+      // Navigate to start new session
+      navigation.navigate('StartSession', { course });
     }
   };
 
@@ -121,10 +147,12 @@ export default function CourseDetailsScreen({ navigation, route }) {
       <View style={styles.actionSection}>
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('StartSession', { course })}
+          onPress={handleStartSession}
         >
-          <Text style={styles.buttonIcon}>🚀</Text>
-          <Text style={styles.primaryButtonText}>Start Attendance Session</Text>
+          <Text style={styles.buttonIcon}>{activeSession ? '👁️' : '🚀'}</Text>
+          <Text style={styles.primaryButtonText}>
+            {activeSession ? 'View Active Session' : 'Start Attendance Session'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
