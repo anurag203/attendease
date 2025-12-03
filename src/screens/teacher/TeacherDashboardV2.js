@@ -90,10 +90,20 @@ export default function TeacherDashboard({ navigation }) {
     
     return (
       <TouchableOpacity
-        style={styles.courseCard}
+        style={[
+          styles.courseCard,
+          activeSession && styles.courseCardActive
+        ]}
         onPress={() => navigation.navigate('CourseDetails', { course })}
         activeOpacity={0.7}
       >
+        {/* Active Session Badge */}
+        {activeSession && (
+          <View style={styles.activeSessionBadge}>
+            <Text style={styles.activeSessionBadgeText}>🔴 LIVE SESSION</Text>
+          </View>
+        )}
+
         <View style={styles.cardHeader}>
           <View style={styles.courseInfo}>
             <Text style={styles.courseName}>{course.course_name}</Text>
@@ -236,6 +246,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
+  },
+  courseCardActive: {
+    borderColor: '#ef4444',
+    borderWidth: 2,
+    backgroundColor: '#1a0f0f',
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  activeSessionBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 12,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  activeSessionBadgeText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   cardHeader: {
     flexDirection: 'row',

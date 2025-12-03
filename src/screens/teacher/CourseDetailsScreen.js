@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { courseAPI, sessionAPI } from '../../services/api';
 import { COLORS } from '../../utils/constants';
 
@@ -28,6 +29,13 @@ export default function CourseDetailsScreen({ navigation, route }) {
       checkActiveSession();
     }
   }, []);
+
+  // Refresh active session when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      checkActiveSession();
+    }, [course.id])
+  );
 
   const fetchCourse = async () => {
     try {

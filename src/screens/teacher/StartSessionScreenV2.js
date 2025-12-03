@@ -152,8 +152,8 @@ export default function StartSessionScreen({ navigation, route }) {
     // Check immediately
     checkBluetoothContinuously();
 
-    // Then check every 3 seconds
-    const interval = setInterval(checkBluetoothContinuously, 3000);
+    // Then check every 1.5 seconds
+    const interval = setInterval(checkBluetoothContinuously, 1500);
 
     return () => {
       clearInterval(interval);
