@@ -128,7 +128,8 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.menuOverlay}>
             <TouchableOpacity
               style={styles.menuOption}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation();
                 setMenuVisible(null);
                 navigation.navigate('EditStudents', { course });
               }}
@@ -137,7 +138,8 @@ export default function TeacherDashboard({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuOption}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation();
                 setMenuVisible(null);
                 navigation.navigate('CourseDetails', { course });
               }}
@@ -146,7 +148,8 @@ export default function TeacherDashboard({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuOption, styles.menuOptionDanger]}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation();
                 setMenuVisible(null);
                 handleDeleteCourse(course.id);
               }}
