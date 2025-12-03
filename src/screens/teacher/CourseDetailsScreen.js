@@ -53,15 +53,21 @@ export default function CourseDetailsScreen({ navigation, route }) {
   };
 
   const handleStartSession = () => {
+    // Add student count to course object
+    const courseWithCount = {
+      ...course,
+      student_count: course.students?.length || 0
+    };
+    
     if (activeSession) {
       // Navigate directly to active session
       navigation.navigate('StartSession', { 
-        course,
+        course: courseWithCount,
         existingSessionId: activeSession.id 
       });
     } else {
       // Navigate to start new session
-      navigation.navigate('StartSession', { course });
+      navigation.navigate('StartSession', { course: courseWithCount });
     }
   };
 

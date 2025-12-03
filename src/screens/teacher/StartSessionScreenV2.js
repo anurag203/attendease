@@ -167,7 +167,23 @@ export default function StartSessionScreen({ navigation, route }) {
     }
 
     // Get total students for this course
-    setTotalStudents(course.student_count || 0);
+    let studentCount = course.student_count || course.students?.length || 0;
+    
+    // If still 0, fetch from API
+    if (studentCount === 0 && course.id) {
+      try {
+        const courseAPI = require('../../services/api').courseAPI;
+        const response = await courseAPI.getCourse(course.id);
+        const fetchedCourse = response.data.data;
+        studentCount = fetchedCourse.students?.length || 0;
+        console.log('📊 Fetched student count:', studentCount);
+      } catch (error) {
+        console.error('Failed to fetch student count:', error);
+      }
+    }
+    
+    setTotalStudents(studentCount);
+    console.log('👥 Total students for session:', studentCount);
   };
 
   const loadExistingSession = async (sessionId) => {
