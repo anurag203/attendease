@@ -90,55 +90,56 @@ export default function TeacherDashboard({ navigation }) {
     const activeSession = activeSessions.find(s => s.course_id === course.id);
     
     return (
-      <TouchableOpacity
-        style={styles.courseCard}
-        onPress={() => {
-          if (menuVisible === course.id) {
-            setMenuVisible(null);
-          } else {
-            navigation.navigate('CourseDetails', { course });
-          }
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.courseInfo}>
-            <Text style={styles.courseName}>{course.course_name}</Text>
-            <Text style={styles.courseCode}>#{course.course_code}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              setMenuVisible(menuVisible === course.id ? null : course.id);
-            }}
-          >
-            <Text style={styles.menuDots}>⋮</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.cardDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>🎓</Text>
-            <Text style={styles.detailText}>{course.degree}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📖</Text>
-            <Text style={styles.detailText}>{course.branch}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📅</Text>
-            <Text style={styles.detailText}>Year {course.year}</Text>
-          </View>
-        </View>
-
-        {/* Three-dot menu */}
-        {menuVisible === course.id && (
-          <View style={styles.menuOverlay}>
+      <View style={{ marginBottom: 16 }}>
+        <TouchableOpacity
+          style={styles.courseCard}
+          onPress={() => {
+            if (menuVisible === course.id) {
+              setMenuVisible(null);
+            } else {
+              navigation.navigate('CourseDetails', { course });
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.courseInfo}>
+              <Text style={styles.courseName}>{course.course_name}</Text>
+              <Text style={styles.courseCode}>#{course.course_code}</Text>
+            </View>
             <TouchableOpacity
-              style={styles.menuOption}
+              style={styles.menuButton}
               onPress={(e) => {
                 e.stopPropagation();
+                setMenuVisible(menuVisible === course.id ? null : course.id);
+              }}
+            >
+              <Text style={styles.menuDots}>⋮</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cardDetails}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>🎓</Text>
+              <Text style={styles.detailText}>{course.degree}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>📖</Text>
+              <Text style={styles.detailText}>{course.branch}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>📅</Text>
+              <Text style={styles.detailText}>Year {course.year}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Three-dot menu - OUTSIDE TouchableOpacity */}
+        {menuVisible === course.id && (
+          <View style={styles.menuOverlay} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.menuOption}
+              onPress={() => {
                 setMenuVisible(null);
                 navigation.navigate('EditStudents', { course });
               }}
@@ -147,8 +148,7 @@ export default function TeacherDashboard({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuOption}
-              onPress={(e) => {
-                e.stopPropagation();
+              onPress={() => {
                 setMenuVisible(null);
                 navigation.navigate('CourseDetails', { course });
               }}
@@ -157,8 +157,7 @@ export default function TeacherDashboard({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuOption, styles.menuOptionDanger]}
-              onPress={(e) => {
-                e.stopPropagation();
+              onPress={() => {
                 setMenuVisible(null);
                 handleDeleteCourse(course.id);
               }}
@@ -169,7 +168,7 @@ export default function TeacherDashboard({ navigation }) {
             </TouchableOpacity>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -295,7 +294,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.darkGray,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
     position: 'relative',
