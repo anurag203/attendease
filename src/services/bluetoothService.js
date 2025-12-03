@@ -188,27 +188,40 @@ export const getDeviceAddress = async () => {
       return null;
     }
 
-    // Try to get the local device address
-    if (RNBluetoothClassic && typeof RNBluetoothClassic.getBondedDevices === 'function') {
-      const devices = await RNBluetoothClassic.getBondedDevices();
-      if (devices && devices.length > 0) {
-        const address = devices[0].address;
-        console.log('📱 Got device address:', address);
-        return address;
+    // Priority 1: Get local adapter address from our custom native module
+    if (NativeBluetoothModule && typeof NativeBluetoothModule.getAddress === 'function') {
+      try {
+        const address = await NativeBluetoothModule.getAddress();
+        if (address) {
+          console.log('📱 Got LOCAL device address from native module:', address);
+          return address;
+        }
+      } catch (error) {
+        console.log('⚠️ Native module getAddress failed:', error.message);
       }
     }
     
-    // Fallback: Try native module
-    if (NativeBluetoothModule && typeof NativeBluetoothModule.getAddress === 'function') {
-      const address = await NativeBluetoothModule.getAddress();
-      console.log('📱 Got native device address:', address);
-      return address;
+    // Priority 2: Try RNBluetoothClassic local address (if available)
+    if (RNBluetoothClassic && typeof RNBluetoothClassic.getLocalAddress === 'function') {
+      try {
+        const address = await RNBluetoothClassic.getLocalAddress();
+        if (address) {
+          console.log('📱 Got LOCAL device address from RNBluetoothClassic:', address);
+          return address;
+        }
+      } catch (error) {
+        console.log('⚠️ RNBluetoothClassic getLocalAddress failed:', error.message);
+      }
     }
     
-    // Mock for testing (but only if Bluetooth is ON)
-    const mockAddress = 'DEVICE-' + Date.now().toString().slice(-8);
-    console.log('📱 Using mock address:', mockAddress);
-    return mockAddress;
+    // Fallback: Error - cannot get real address
+    console.error('❌ Cannot get local Bluetooth address - no method available');
+    Alert.alert(
+      'Bluetooth Error',
+      'Cannot get device Bluetooth address. Please restart the app and try again.',
+      [{ text: 'OK' }]
+    );
+    return null;
   } catch (error) {
     console.error('Get device address error:', error.message);
     return null;
