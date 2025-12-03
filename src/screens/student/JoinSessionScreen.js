@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  
+  AppState,
   Alert,
   FlatList,
   Switch,
@@ -47,6 +47,29 @@ export default function JoinSessionScreen({ navigation, route }) {
       if (interval) clearInterval(interval);
     };
   }, [isBluetoothOn, attendanceMarked]);
+
+  // Continuously monitor Bluetooth state (poll every 3 seconds)
+  useEffect(() => {
+    const checkBluetoothContinuously = async () => {
+      const state = await checkBluetoothState();
+      
+      // Only update if state changed
+      if (state !== isBluetoothOn) {
+        console.log('🔵 Student Bluetooth state changed:', isBluetoothOn, '→', state);
+        setIsBluetoothOn(state);
+      }
+    };
+
+    // Check immediately
+    checkBluetoothContinuously();
+
+    // Then check every 3 seconds
+    const interval = setInterval(checkBluetoothContinuously, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isBluetoothOn]);
 
   const init = async () => {
     const granted = await requestBluetoothPermissions();

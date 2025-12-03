@@ -98,6 +98,36 @@ export default function StartSessionScreen({ navigation, route }) {
     };
   }, [deviceAddress]);
 
+  // Continuously monitor Bluetooth state (poll every 3 seconds)
+  useEffect(() => {
+    const checkBluetoothContinuously = async () => {
+      const state = await checkBluetoothState();
+      
+      // Only update if state changed
+      if (state !== isBluetoothOn) {
+        console.log('🔵 Bluetooth state changed:', isBluetoothOn, '→', state);
+        setIsBluetoothOn(state);
+        
+        // If Bluetooth just turned on, get device address
+        if (state && !deviceAddress) {
+          const address = await getDeviceAddress();
+          setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
+          console.log('📱 Device address:', address);
+        }
+      }
+    };
+
+    // Check immediately
+    checkBluetoothContinuously();
+
+    // Then check every 3 seconds
+    const interval = setInterval(checkBluetoothContinuously, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isBluetoothOn, deviceAddress]);
+
   const init = async () => {
     const granted = await requestBluetoothPermissions();
     if (granted) {
