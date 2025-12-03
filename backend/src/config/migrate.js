@@ -65,7 +65,7 @@ const createTables = async () => {
     `);
 
     // Course exclusions table (for manually removed students)
-    await client.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS course_exclusions (
         id SERIAL PRIMARY KEY,
         course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
