@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   FlatList,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { sessionAPI } from '../../services/api';
@@ -75,6 +76,27 @@ export default function StartSessionScreen({ navigation, route }) {
       if (interval) clearInterval(interval);
     };
   }, [sessionStarted, sessionId]);
+
+  // Listen for app state changes to detect when returning from settings
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        // App became active, re-check Bluetooth state
+        console.log('🔄 App became active, checking Bluetooth...');
+        const state = await checkBluetoothState();
+        setIsBluetoothOn(state);
+        
+        if (state && !deviceAddress) {
+          const address = await getDeviceAddress();
+          setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
+        }
+      }
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [deviceAddress]);
 
   const init = async () => {
     const granted = await requestBluetoothPermissions();

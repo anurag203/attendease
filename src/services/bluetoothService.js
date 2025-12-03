@@ -88,8 +88,27 @@ export const requestBluetoothPermissions = async () => {
 };
 
 export const checkBluetoothState = async () => {
-  const state = await BluetoothStateManager.getState();
-  return state === 'PoweredOn';
+  try {
+    if (BluetoothStateManager && typeof BluetoothStateManager.getState === 'function') {
+      const state = await BluetoothStateManager.getState();
+      console.log('📱 Bluetooth state:', state);
+      return state === 'PoweredOn';
+    }
+    
+    // Fallback: Try native module
+    if (NativeBluetoothModule && typeof NativeBluetoothModule.isEnabled === 'function') {
+      const enabled = await NativeBluetoothModule.isEnabled();
+      console.log('📱 Native Bluetooth enabled:', enabled);
+      return enabled;
+    }
+    
+    // Mock: Always return true for testing
+    console.log('📱 Using mock Bluetooth state (true)');
+    return true;
+  } catch (error) {
+    console.error('Check Bluetooth state error:', error);
+    return false;
+  }
 };
 
 export const enableBluetooth = async () => {
