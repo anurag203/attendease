@@ -195,17 +195,34 @@ exports.endSession = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      `UPDATE attendance_sessions 
-       SET status = 'ended', ended_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND teacher_id = $2 AND status = 'active'
-       RETURNING *`,
+    // First get the session to calculate actual duration
+    const session = await pool.query(
+      `SELECT session_date FROM attendance_sessions 
+       WHERE id = $1 AND teacher_id = $2 AND status = 'active'`,
       [id, req.user.id]
     );
 
-    if (result.rows.length === 0) {
+    if (session.rows.length === 0) {
       return res.status(404).json({ error: 'Active session not found or unauthorized' });
     }
+
+    // Calculate actual duration in minutes
+    const startTime = new Date(session.rows[0].session_date);
+    const endTime = new Date();
+    const actualDurationMinutes = Math.ceil((endTime - startTime) / (1000 * 60));
+
+    // Update session with ended_at and actual duration
+    const result = await pool.query(
+      `UPDATE attendance_sessions 
+       SET status = 'ended', 
+           ended_at = CURRENT_TIMESTAMP,
+           duration_minutes = $3
+       WHERE id = $1 AND teacher_id = $2 AND status = 'active'
+       RETURNING *`,
+      [id, req.user.id, actualDurationMinutes]
+    );
+
+    console.log(`📊 Session ended - Actual duration: ${actualDurationMinutes} minutes`);
 
     res.status(200).json({
       success: true,

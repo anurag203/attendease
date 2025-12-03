@@ -127,8 +127,8 @@ export default function StartSessionScreen({ navigation, route }) {
           if (sessionStarted && sessionId) {
             console.log('🛑 Ending session immediately due to Bluetooth OFF');
             
-            // End session FIRST (don't wait for user to click OK)
-            handleEndSession();
+            // End session immediately (without showing alert from handleEndSession)
+            await handleEndSession(false);
             
             // Then show alert and navigate back
             Alert.alert(
@@ -300,17 +300,42 @@ export default function StartSessionScreen({ navigation, route }) {
     }
   };
 
-  const handleEndSession = async () => {
+  const confirmEndSession = () => {
+    Alert.alert(
+      'End Session Early?',
+      `Are you sure you want to end this session early?\n\n${markedStudents.length}/${totalStudents} students have marked attendance.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'End Session',
+          style: 'destructive',
+          onPress: () => handleEndSession(true),
+        },
+      ]
+    );
+  };
+
+  const handleEndSession = async (showAlert = true) => {
     if (!sessionId) return;
 
     try {
+      // Stop timer immediately
+      setSessionStarted(false);
+      setTimeRemaining(0);
+      
       await sessionAPI.endSession(sessionId);
-      Alert.alert('Session Ended', 'Attendance session has been closed', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      
+      if (showAlert) {
+        Alert.alert('Session Ended', 'Attendance session has been closed', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to end session');
     }
@@ -460,7 +485,7 @@ export default function StartSessionScreen({ navigation, route }) {
       </View>
 
       {/* End Session Button */}
-      <TouchableOpacity style={styles.endButton} onPress={handleEndSession}>
+      <TouchableOpacity style={styles.endButton} onPress={confirmEndSession}>
         <Text style={styles.endButtonText}>⏹️ End Session Early</Text>
       </TouchableOpacity>
     </SafeAreaView>
