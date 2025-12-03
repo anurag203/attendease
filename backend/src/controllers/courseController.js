@@ -60,12 +60,13 @@ exports.getCourses = async (req, res) => {
           AND c.year::text = $3::text
         ORDER BY c.created_at DESC
       `;
-      params = [req.user.degree, req.user.branch, req.user.year.toString()];
+      params = [req.user.degree, req.user.branch, String(req.user.year)];
       console.log('🔍 Student Query:', { 
         degree: req.user.degree, 
         branch: req.user.branch, 
         year: req.user.year,
-        yearAsString: req.user.year.toString()
+        yearType: typeof req.user.year,
+        yearAsString: String(req.user.year)
       });
     }
 
