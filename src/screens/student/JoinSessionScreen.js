@@ -18,6 +18,7 @@ import {
   discoverNearbyDevices,
   isDeviceNearby,
 } from '../../services/bluetoothService';
+import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import { COLORS } from '../../utils/constants';
 
 export default function JoinSessionScreen({ navigation, route }) {
@@ -30,6 +31,14 @@ export default function JoinSessionScreen({ navigation, route }) {
 
   useEffect(() => {
     init();
+    
+    // Cleanup on unmount
+    return () => {
+      console.log('🧹 Cleaning up Bluetooth discovery...');
+      RNBluetoothClassic.cancelDiscovery().catch(err => 
+        console.log('Cleanup discovery cancel (ignored):', err.message)
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -42,9 +51,16 @@ export default function JoinSessionScreen({ navigation, route }) {
       
       // Initial scan
       scanForTeacher();
+    } else {
+      // Cancel discovery when Bluetooth turns off or attendance marked
+      RNBluetoothClassic.cancelDiscovery().catch(err => 
+        console.log('Cancel discovery (ignored):', err.message)
+      );
     }
     return () => {
       if (interval) clearInterval(interval);
+      // Also cancel on cleanup
+      RNBluetoothClassic.cancelDiscovery().catch(() => {});
     };
   }, [isBluetoothOn, attendanceMarked]);
 

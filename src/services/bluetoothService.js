@@ -217,6 +217,21 @@ export const getDeviceAddress = async () => {
 
 export const discoverNearbyDevices = async () => {
   try {
+    // Cancel any ongoing discovery first
+    try {
+      const isDiscovering = await RNBluetoothClassic.isDiscovering();
+      if (isDiscovering) {
+        console.log('🔍 Canceling existing discovery...');
+        await RNBluetoothClassic.cancelDiscovery();
+        // Wait a bit for cancellation to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (cancelError) {
+      console.log('⚠️ Cancel discovery error (ignoring):', cancelError.message);
+    }
+
+    // Start fresh discovery
+    console.log('🔍 Starting new discovery...');
     const found = await RNBluetoothClassic.startDiscovery();
     
     // Remove duplicates
@@ -225,9 +240,12 @@ export const discoverNearbyDevices = async () => {
       uniqueDevicesMap[device.address] = device;
     });
 
-    return Object.values(uniqueDevicesMap);
+    const uniqueDevices = Object.values(uniqueDevicesMap);
+    console.log(`✅ Found ${uniqueDevices.length} unique devices`);
+    return uniqueDevices;
   } catch (error) {
-    console.error('Discovery error:', error);
+    console.error('Discovery error:', error.message);
+    // Return empty array instead of throwing
     return [];
   }
 };
