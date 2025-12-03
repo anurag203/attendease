@@ -92,7 +92,13 @@ export default function TeacherDashboard({ navigation }) {
     return (
       <TouchableOpacity
         style={styles.courseCard}
-        onPress={() => navigation.navigate('CourseDetails', { course })}
+        onPress={() => {
+          if (menuVisible === course.id) {
+            setMenuVisible(null);
+          } else {
+            navigation.navigate('CourseDetails', { course });
+          }
+        }}
         activeOpacity={0.7}
       >
         <View style={styles.cardHeader}>
@@ -102,7 +108,10 @@ export default function TeacherDashboard({ navigation }) {
           </View>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => setMenuVisible(course.id)}
+            onPress={(e) => {
+              e.stopPropagation();
+              setMenuVisible(menuVisible === course.id ? null : course.id);
+            }}
           >
             <Text style={styles.menuDots}>⋮</Text>
           </TouchableOpacity>
