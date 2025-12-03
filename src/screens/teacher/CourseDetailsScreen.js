@@ -55,7 +55,7 @@ export default function CourseDetailsScreen({ navigation, route }) {
   const handleStartSession = () => {
     if (activeSession) {
       // Navigate directly to active session
-      navigation.navigate('StartSessionV2', { 
+      navigation.navigate('StartSession', { 
         course,
         existingSessionId: activeSession.id 
       });
