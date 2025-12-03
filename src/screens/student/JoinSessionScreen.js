@@ -124,20 +124,36 @@ export default function JoinSessionScreen({ navigation, route }) {
 
     setIsScanning(true);
     try {
+      console.log('🔍 Starting scan for teacher device...');
+      console.log('📍 Looking for teacher address:', session.teacher_bluetooth_address);
+      
       const foundDevices = await discoverNearbyDevices();
       
       // Only update devices if we got results
       if (foundDevices && foundDevices.length > 0) {
+        console.log(`📱 Found ${foundDevices.length} devices:`);
+        foundDevices.forEach((device, index) => {
+          console.log(`  ${index + 1}. ${device.name || 'Unknown'} - ${device.address}`);
+        });
+        
         setDevices(foundDevices);
 
         // Check if teacher's device is nearby
         const teacherNearby = isDeviceNearby(foundDevices, session.teacher_bluetooth_address);
         
-        if (teacherNearby && !attendanceMarked) {
-          console.log('✅ Teacher device found! Auto-marking attendance...');
-          // Auto-mark attendance
-          await markAttendance(true);
+        if (teacherNearby) {
+          console.log('✅ MATCH! Teacher device found in the list!');
+          if (!attendanceMarked) {
+            console.log('✅ Auto-marking attendance...');
+            await markAttendance(true);
+          } else {
+            console.log('⚠️ Attendance already marked, skipping');
+          }
+        } else {
+          console.log('❌ Teacher device NOT found in scanned devices');
         }
+      } else {
+        console.log('⚠️ No devices found in scan');
       }
     } catch (error) {
       console.error('Scan error:', error);
