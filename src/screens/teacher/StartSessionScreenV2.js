@@ -454,19 +454,9 @@ export default function StartSessionScreen({ navigation, route }) {
         <Text style={styles.sessionCourseCode}>#{course.course_code}</Text>
       </View>
 
-      {/* Session Active Status Card */}
-      <View style={styles.broadcastCard}>
-        <View style={styles.broadcastHeader}>
-          <Text style={styles.broadcastIcon}>✅</Text>
-          <View style={styles.broadcastInfo}>
-            <Text style={styles.broadcastTitle}>Session Active</Text>
-            <Text style={styles.broadcastSubtitle}>Students can now mark attendance</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.broadcastMessage}>
-          📱 Keep your Bluetooth ON. Students nearby can mark attendance automatically.
-        </Text>
+      {/* Simple Session Active Status Bar */}
+      <View style={styles.activeStatusBar}>
+        <Text style={styles.activeStatusText}>✅ Session Active • Bluetooth ON</Text>
       </View>
 
       {/* Circular Timer */}
@@ -812,61 +802,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.white,
   },
-  // BLE Broadcasting Card Styles
-  broadcastCard: {
-    backgroundColor: '#064e3b',
+  // Simple Active Status Bar
+  activeStatusBar: {
+    backgroundColor: '#10b981',
     marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#10b981',
-  },
-  broadcastHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  broadcastIcon: {
-    fontSize: 40,
-    marginRight: 16,
-  },
-  broadcastInfo: {
-    flex: 1,
-  },
-  broadcastTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#10b981',
-    marginBottom: 4,
-  },
-  broadcastSubtitle: {
-    fontSize: 14,
-    color: COLORS.lightGray,
-  },
-  tokenDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.darkGray,
-    padding: 12,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    marginBottom: 12,
+    alignItems: 'center',
   },
-  tokenDisplayLabel: {
+  activeStatusText: {
     fontSize: 14,
-    color: COLORS.lightGray,
-    marginRight: 12,
-  },
-  tokenDisplayValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    letterSpacing: 3,
-  },
-  broadcastMessage: {
-    fontSize: 13,
-    color: COLORS.lightGray,
-    lineHeight: 20,
-    textAlign: 'center',
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
