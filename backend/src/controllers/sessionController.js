@@ -154,9 +154,8 @@ exports.getSession = async (req, res) => {
          WHERE role = 'student' 
          AND degree = $1 
          AND branch = $2 
-         AND year = $3
-         AND id NOT IN (SELECT student_id FROM course_exclusions WHERE course_id = $4)`,
-        [session.degree, session.branch, session.year, session.course_id]
+         AND year = $3`,
+        [session.degree, session.branch, session.year]
       );
       totalStudents = parseInt(totalStudentsResult.rows[0].count) || 0;
     } catch (countError) {
