@@ -15,9 +15,8 @@ import {
   requestBluetoothPermissions,
   checkBluetoothState,
   enableBluetooth,
-  discoverNearbyDevices,
-  isDeviceNearby,
 } from '../../services/bluetoothService';
+import { scanForTeacherDevice } from '../../services/bluetoothProximityService';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import { COLORS } from '../../utils/constants';
 
@@ -28,6 +27,8 @@ export default function JoinSessionScreen({ navigation, route }) {
   const [isScanning, setIsScanning] = useState(false);
   const [attendanceMarked, setAttendanceMarked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [teacherFound, setTeacherFound] = useState(false);
+  const [detectedToken, setDetectedToken] = useState(null);
 
   useEffect(() => {
     init();
@@ -124,60 +125,76 @@ export default function JoinSessionScreen({ navigation, route }) {
 
     setIsScanning(true);
     try {
-      console.log('🔍 Starting scan for teacher device...');
-      console.log('📍 Looking for teacher address:', session.teacher_bluetooth_address);
+      console.log('🔍 Scanning for teacher device with proximity token:', session.proximity_token);
       
-      const foundDevices = await discoverNearbyDevices();
+      // Scan for teacher device by token
+      const result = await scanForTeacherDevice(session.proximity_token);
       
-      // Only update devices if we got results
-      if (foundDevices && foundDevices.length > 0) {
-        console.log(`📱 Found ${foundDevices.length} devices:`);
-        foundDevices.forEach((device, index) => {
-          console.log(`  ${index + 1}. ${device.name || 'Unknown'} - ${device.address}`);
-        });
+      // Store all found devices for display
+      if (result.device) {
+        setDevices([result.device]);
+      }
+      
+      if (result.found) {
+        console.log('✅ Teacher device found!', result.device.name);
+        setTeacherFound(true);
+        setDetectedToken(result.token);
         
-        setDevices(foundDevices);
-
-        // Check if teacher's device is nearby
-        const teacherNearby = isDeviceNearby(foundDevices, session.teacher_bluetooth_address);
-        
-        if (teacherNearby) {
-          console.log('✅ MATCH! Teacher device found in the list!');
-          if (!attendanceMarked) {
-            console.log('✅ Auto-marking attendance...');
-            await markAttendance(true);
-          } else {
-            console.log('⚠️ Attendance already marked, skipping');
-          }
-        } else {
-          console.log('❌ Teacher device NOT found in scanned devices');
+        if (!attendanceMarked) {
+          console.log('✅ Auto-marking attendance with proximity token...');
+          await markAttendanceWithProximity(result.token, result.device.name);
         }
       } else {
-        console.log('⚠️ No devices found in scan');
+        console.log('❌ Teacher device not found:', result.message);
+        setTeacherFound(false);
+        setDetectedToken(null);
       }
     } catch (error) {
       console.error('Scan error:', error);
+      Alert.alert('Scan Error', error.message || 'Failed to scan for devices');
     } finally {
       setIsScanning(false);
     }
   };
 
-  const markAttendance = async (bluetoothVerified) => {
+  const markAttendanceWithProximity = async (token, deviceName) => {
     setLoading(true);
     try {
-      await sessionAPI.markAttendance(session.id, { bluetooth_verified: bluetoothVerified });
+      console.log('📤 Sending proximity verification to server...');
+      await sessionAPI.markAttendanceProximity(session.id, {
+        detectedToken: token,
+        deviceName: deviceName,
+      });
       setAttendanceMarked(true);
-      console.log('✅ Attendance marked successfully!');
-      // Will show the big tick screen automatically
+      console.log('✅ Attendance marked successfully via proximity!');
+      Alert.alert('Success! ✅', 'Your attendance has been marked');
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to mark attendance');
+      console.error('❌ Attendance marking error:', error.response?.data);
+      Alert.alert(
+        'Attendance Error',
+        error.response?.data?.message || error.response?.data?.error || 'Failed to mark attendance'
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleManualMarkAttendance = async () => {
+    if (!isBluetoothOn) {
+      Alert.alert('Bluetooth Required', 'Please enable Bluetooth first');
+      return;
+    }
+
+    if (loading || isScanning) {
+      return;
+    }
+
+    // Perform a fresh scan
+    await scanForTeacher();
+  };
+
   const renderDevice = ({ item }) => {
-    const isTeacher = item.address === session.teacher_bluetooth_address;
+    const isTeacher = item.name && item.name.startsWith('ATTENDEASE-');
     return (
       <View style={[styles.deviceItem, isTeacher && styles.deviceItemTeacher]}>
         <View style={styles.deviceInfo}>
@@ -215,7 +232,7 @@ export default function JoinSessionScreen({ navigation, route }) {
     );
   }
 
-  const teacherFound = isDeviceNearby(devices, session.teacher_bluetooth_address);
+  // teacherFound is now managed by state
 
   return (
     <SafeAreaView style={styles.container}>
@@ -230,6 +247,12 @@ export default function JoinSessionScreen({ navigation, route }) {
           <Text style={styles.sessionTitle}>{session.course_name}</Text>
           <Text style={styles.sessionCode}>{session.course_code}</Text>
           <Text style={styles.sessionTeacher}>👨‍🏫 {session.teacher_name}</Text>
+          {session.proximity_token && (
+            <View style={styles.tokenInfo}>
+              <Text style={styles.tokenLabel}>Looking for:</Text>
+              <Text style={styles.tokenValue}>ATTENDEASE-{session.proximity_token}</Text>
+            </View>
+          )}
         </View>
 
         <View style={[styles.bluetoothSection, !isBluetoothOn && styles.bluetoothSectionWarning]}>
@@ -260,19 +283,32 @@ export default function JoinSessionScreen({ navigation, route }) {
                   <Text style={styles.statusIcon}>✅</Text>
                   <Text style={styles.statusTitle}>Teacher Device Found!</Text>
                   <Text style={styles.statusMessage}>
-                    You are in range. Your attendance will be marked automatically.
+                    Device: ATTENDEASE-{detectedToken}
+                  </Text>
+                  <Text style={styles.statusMessage}>
+                    You are in range. Marking attendance...
                   </Text>
                 </>
               ) : (
                 <>
                   <Text style={styles.statusIcon}>🔍</Text>
-                  <Text style={styles.statusTitle}>Searching...</Text>
+                  <Text style={styles.statusTitle}>{isScanning ? 'Scanning...' : 'Not Found'}</Text>
                   <Text style={styles.statusMessage}>
-                    Move closer to the classroom to mark attendance
+                    Move closer to the classroom and tap "Scan Now"
                   </Text>
                 </>
               )}
             </View>
+
+            <TouchableOpacity
+              style={[styles.scanButton, (loading || isScanning) && styles.scanButtonDisabled]}
+              onPress={handleManualMarkAttendance}
+              disabled={loading || isScanning}
+            >
+              <Text style={styles.scanButtonText}>
+                {isScanning ? '🔍 Scanning...' : loading ? '⏳ Marking...' : '📡 Scan Now'}
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.devicesSection}>
               <Text style={styles.devicesTitle}>Nearby Devices ({devices.length}):</Text>
@@ -332,6 +368,25 @@ const styles = StyleSheet.create({
   sessionTeacher: {
     fontSize: 14,
     color: COLORS.lightGray,
+  },
+  tokenInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: COLORS.darkGray,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  tokenLabel: {
+    fontSize: 12,
+    color: COLORS.lightGray,
+    marginBottom: 4,
+  },
+  tokenValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+    letterSpacing: 1,
   },
   bluetoothSection: {
     backgroundColor: COLORS.darkGray,
@@ -505,5 +560,27 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 18,
     fontWeight: '600',
+  },
+  scanButton: {
+    backgroundColor: COLORS.primary,
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  scanButtonDisabled: {
+    backgroundColor: COLORS.mediumGray,
+    opacity: 0.6,
+  },
+  scanButtonText: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

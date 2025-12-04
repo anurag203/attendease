@@ -63,6 +63,7 @@ export const sessionAPI = {
   getActiveSessions: () => api.get('/sessions/active'),
   getSession: (id) => api.get(`/sessions/${id}`),
   markAttendance: (id, data) => api.post(`/sessions/${id}/mark`, data),
+  markAttendanceProximity: (id, data) => api.post(`/sessions/${id}/mark-proximity`, data),
   endSession: (id) => api.post(`/sessions/${id}/end`),
   getCourseHistory: (courseId) => api.get(`/sessions/course/${courseId}/history`),
   getStudentStats: (courseId) => api.get('/sessions/student/stats', { params: { course_id: courseId } }),
