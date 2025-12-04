@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Platform, NativeModules, Linking, Alert } from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import { BleManager } from 'react-native-ble-plx';
+import { checkBluetoothState } from './bluetoothService';
 
 /**
  * Bluetooth Proximity Service
