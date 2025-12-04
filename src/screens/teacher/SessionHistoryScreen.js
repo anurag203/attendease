@@ -76,7 +76,8 @@ export default function SessionHistoryScreen({ navigation, route }) {
     
     try {
       const response = await sessionAPI.getSession(session.id);
-      const attendance = response.data?.data?.attendance || [];
+      const attendance = response.data?.data?.attendance || response.data?.data?.marked_students || [];
+      console.log('📋 Students in session:', attendance);
       setStudentList(attendance);
     } catch (error) {
       console.error('Fetch students error:', error);
@@ -234,14 +235,14 @@ export default function SessionHistoryScreen({ navigation, route }) {
                 renderItem={({ item }) => (
                   <View style={styles.studentItem}>
                     <View style={styles.studentInfo}>
-                      <Text style={styles.studentName}>{item.student_name}</Text>
+                      <Text style={styles.studentName}>{item.full_name || item.student_name || 'Unknown'}</Text>
                       <Text style={styles.studentId}>{item.student_id}</Text>
                       {item.bluetooth_verified && (
                         <Text style={styles.bluetoothBadge}>🔵 Bluetooth Verified</Text>
                       )}
                     </View>
                     <TouchableOpacity
-                      onPress={() => confirmDeleteStudent(item.id, item.student_name)}
+                      onPress={() => confirmDeleteStudent(item.id, item.full_name || item.student_name || 'Student')}
                       style={styles.studentDeleteButton}
                     >
                       <Text style={styles.studentDeleteIcon}>🗑️</Text>
