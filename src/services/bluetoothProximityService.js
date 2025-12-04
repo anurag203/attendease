@@ -171,9 +171,18 @@ export async function scanForTeacherDevice(sessionToken) {
 
           if (!device) return;
           
-          // Log every device found for debugging
+          // Log every device found with full details for debugging
           if (device.name) {
             console.log(`📱 Found device: ${device.name} [${device.id}]`);
+          }
+          
+          // Log service UUIDs and service data
+          if (device.serviceUUIDs && device.serviceUUIDs.length > 0) {
+            console.log(`  🔷 Service UUIDs: ${device.serviceUUIDs.join(', ')}`);
+          }
+          
+          if (device.serviceData) {
+            console.log(`  📦 Service Data keys: ${Object.keys(device.serviceData).join(', ')}`);
           }
 
           // Check service data first (primary method)
