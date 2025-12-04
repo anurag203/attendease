@@ -77,27 +77,47 @@ public class BleAdvertiserModule extends ReactContextBaseJavaModule {
                     .addServiceData(serviceUuid, tokenBytes)
                     .build();
 
-            // Create scan response with device name
-            String advertiseName = "ATTENDEASE-" + token;
+            // Create scan response
             AdvertiseData scanResponse = new AdvertiseData.Builder()
                     .setIncludeDeviceName(false)
                     .addServiceUuid(serviceUuid)
                     .build();
 
+            // Create callback BEFORE starting advertising
             advertiseCallback = new AdvertiseCallback() {
                 @Override
                 public void onStartSuccess(AdvertiseSettings settingsInEffect) {
                     super.onStartSuccess(settingsInEffect);
-                    Log.d(TAG, "BLE Advertising started successfully for token: " + token);
+                    Log.d(TAG, "✅ BLE Advertising started successfully! Token: " + token + ", UUID: " + SERVICE_UUID);
                 }
 
                 @Override
                 public void onStartFailure(int errorCode) {
                     super.onStartFailure(errorCode);
-                    Log.e(TAG, "BLE Advertising failed with error code: " + errorCode);
+                    Log.e(TAG, "❌ BLE Advertising failed with error code: " + errorCode);
+                    String errorMsg = "Unknown error";
+                    switch (errorCode) {
+                        case AdvertiseCallback.ADVERTISE_FAILED_DATA_TOO_LARGE:
+                            errorMsg = "Data too large";
+                            break;
+                        case AdvertiseCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS:
+                            errorMsg = "Too many advertisers";
+                            break;
+                        case AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED:
+                            errorMsg = "Already started";
+                            break;
+                        case AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR:
+                            errorMsg = "Internal error";
+                            break;
+                        case AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED:
+                            errorMsg = "Feature unsupported";
+                            break;
+                    }
+                    Log.e(TAG, "Error details: " + errorMsg);
                 }
             };
 
+            // Now start advertising with the callback
             advertiser.startAdvertising(settings, data, scanResponse, advertiseCallback);
             
             Log.d(TAG, "Started BLE advertising with token: " + token);
