@@ -146,16 +146,23 @@ exports.getSession = async (req, res) => {
       [id]
     );
 
-    // Get total students count for this course
-    const totalStudentsResult = await pool.query(
-      `SELECT COUNT(*) as count FROM users 
-       WHERE role = 'student' 
-       AND degree = $1 
-       AND branch = $2 
-       AND year = $3
-       AND id NOT IN (SELECT student_id FROM course_exclusions WHERE course_id = $4)`,
-      [session.degree, session.branch, session.year, session.course_id]
-    );
+    // Get total students count for this course (with error handling)
+    let totalStudents = 0;
+    try {
+      const totalStudentsResult = await pool.query(
+        `SELECT COUNT(*) as count FROM users 
+         WHERE role = 'student' 
+         AND degree = $1 
+         AND branch = $2 
+         AND year = $3
+         AND id NOT IN (SELECT student_id FROM course_exclusions WHERE course_id = $4)`,
+        [session.degree, session.branch, session.year, session.course_id]
+      );
+      totalStudents = parseInt(totalStudentsResult.rows[0].count) || 0;
+    } catch (countError) {
+      console.warn('Failed to get total students count:', countError.message);
+      // Continue without total count rather than crashing
+    }
 
     res.status(200).json({
       success: true,
@@ -163,7 +170,7 @@ exports.getSession = async (req, res) => {
         ...session,
         marked_students: attendanceResult.rows,
         attendance: attendanceResult.rows, // Also add as 'attendance' for consistency
-        total_students: parseInt(totalStudentsResult.rows[0].count),
+        total_students: totalStudents,
       },
     });
   } catch (error) {
