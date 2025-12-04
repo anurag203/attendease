@@ -7,8 +7,8 @@ exports.startSession = async (req, res) => {
     const { course_id, teacher_bluetooth_address, duration_minutes } = req.body;
     const teacher_id = req.user.id;
 
-    if (!course_id || !teacher_bluetooth_address) {
-      return res.status(400).json({ error: 'Please provide course_id and teacher_bluetooth_address' });
+    if (!course_id) {
+      return res.status(400).json({ error: 'Please provide course_id' });
     }
 
     // Verify teacher owns the course
@@ -32,13 +32,18 @@ exports.startSession = async (req, res) => {
       return res.status(400).json({ error: 'An active session already exists for this course' });
     }
 
-    // Create session
+    // Generate 4-digit proximity token
+    const proximityToken = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Create session with proximity token
     const result = await pool.query(
       `INSERT INTO attendance_sessions 
-       (course_id, teacher_id, teacher_bluetooth_address, duration_minutes)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [course_id, teacher_id, teacher_bluetooth_address, duration_minutes || 2]
+       (course_id, teacher_id, teacher_bluetooth_address, duration_minutes, proximity_token)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [course_id, teacher_id, teacher_bluetooth_address || 'BT_NAME_CHECK', duration_minutes || 2, proximityToken]
     );
+
+    console.log(`✅ Session started with proximity token: ${proximityToken}`);
 
     res.status(201).json({
       success: true,
@@ -545,5 +550,75 @@ exports.verifyBeaconToken = async (req, res) => {
   } catch (error) {
     console.error('Verify beacon token error:', error);
     res.status(500).json({ error: 'Server error while verifying token' });
+  }
+};
+
+/**
+ * Verify proximity via Bluetooth name scan and mark attendance (Student)
+ * POST /api/sessions/:id/mark-proximity
+ */
+exports.verifyProximityAndMarkAttendance = async (req, res) => {
+  try {
+    const { id: sessionId } = req.params;
+    const { detectedToken, deviceName } = req.body;
+
+    if (!detectedToken) {
+      return res.status(400).json({ error: 'Detected token is required' });
+    }
+
+    console.log(`🔍 Proximity verification: session=${sessionId}, token=${detectedToken}, device=${deviceName}`);
+
+    // Get active session with proximity token
+    const sessionResult = await pool.query(
+      'SELECT * FROM attendance_sessions WHERE id = $1 AND status = $2',
+      [sessionId, 'active']
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Active session not found' });
+    }
+
+    const session = sessionResult.rows[0];
+
+    // Verify proximity token matches
+    if (session.proximity_token !== detectedToken) {
+      console.log(`❌ Token mismatch: expected=${session.proximity_token}, got=${detectedToken}`);
+      return res.status(401).json({ 
+        error: 'Invalid proximity token',
+        message: 'The detected token does not match the active session. Make sure you are near the correct teacher.',
+      });
+    }
+
+    console.log(`✅ Proximity token verified for session ${sessionId}, student ${req.user.id}`);
+
+    // Check if already marked
+    const existingAttendance = await pool.query(
+      'SELECT * FROM attendance WHERE session_id = $1 AND student_id = $2',
+      [sessionId, req.user.id]
+    );
+
+    if (existingAttendance.rows.length > 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'Attendance already marked',
+        attendance: existingAttendance.rows[0],
+      });
+    }
+
+    // Mark attendance
+    const attendanceResult = await pool.query(
+      'INSERT INTO attendance (session_id, student_id, marked_at) VALUES ($1, $2, NOW()) RETURNING *',
+      [sessionId, req.user.id]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance marked successfully via proximity detection',
+      attendance: attendanceResult.rows[0],
+    });
+
+  } catch (error) {
+    console.error('Verify proximity error:', error);
+    res.status(500).json({ error: 'Server error while verifying proximity' });
   }
 };

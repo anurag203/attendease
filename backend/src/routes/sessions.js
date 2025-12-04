@@ -12,6 +12,7 @@ const {
   getStudentCourseHistory,
   storeBeaconToken,
   verifyBeaconToken,
+  verifyProximityAndMarkAttendance,
 } = require('../controllers/sessionController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -30,6 +31,9 @@ router.delete('/:id', protect, authorize('teacher'), deleteSession);
 // BLE Beacon token routes
 router.post('/:id/token', protect, authorize('teacher'), storeBeaconToken);
 router.post('/:id/verify-token', protect, authorize('student'), verifyBeaconToken);
+
+// Proximity-based attendance (Bluetooth name scanning)
+router.post('/:id/mark-proximity', protect, authorize('student'), verifyProximityAndMarkAttendance);
 
 // Attendance delete route (separate from sessions)
 router.delete('/attendance/:attendanceId', protect, authorize('teacher'), deleteAttendance);
