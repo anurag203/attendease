@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -69,6 +69,10 @@ export default function StartSessionScreen({ navigation, route }) {
   useEffect(() => {
     let interval;
     if (sessionStarted && sessionId) {
+      // Fetch immediately when session starts
+      fetchSessionData();
+      
+      // Then poll every 3 seconds
       interval = setInterval(() => {
         fetchSessionData();
       }, 3000);
@@ -76,7 +80,7 @@ export default function StartSessionScreen({ navigation, route }) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [sessionStarted, sessionId]);
+  }, [sessionStarted, sessionId, fetchSessionData]);
 
   // Listen for app state changes to detect when returning from settings
   useEffect(() => {
@@ -298,7 +302,7 @@ export default function StartSessionScreen({ navigation, route }) {
     }
   };
 
-  const fetchSessionData = async () => {
+  const fetchSessionData = useCallback(async () => {
     if (!sessionId) return;
 
     try {
@@ -310,7 +314,7 @@ export default function StartSessionScreen({ navigation, route }) {
       console.error('Error fetching session data:', error);
       // Silently fail - don't show error to user during live session
     }
-  };
+  }, [sessionId]);
 
   const confirmEndSession = () => {
     Alert.alert(
