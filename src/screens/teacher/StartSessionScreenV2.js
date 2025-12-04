@@ -261,21 +261,10 @@ export default function StartSessionScreen({ navigation, route }) {
   };
 
   const handleStartSession = async () => {
-    if (!isBluetoothOn) {
-      Alert.alert('Bluetooth Required', 'Please enable Bluetooth to start session');
-      return;
-    }
-
-    if (!deviceAddress) {
-      Alert.alert('Error', 'Could not get device address');
-      return;
-    }
-
     setLoading(true);
     try {
       const response = await sessionAPI.startSession({
         course_id: course.id,
-        teacher_bluetooth_address: deviceAddress,
         duration_minutes: selectedDuration,
       });
 
@@ -286,14 +275,15 @@ export default function StartSessionScreen({ navigation, route }) {
       setTimeRemaining(selectedDuration * 60); // Convert to seconds
       
       Alert.alert(
-        'Session Started!',
-        `Proximity Token: ${sessionData.proximity_token}\n\nChange your Bluetooth name to:\nATTENDEASE-${sessionData.proximity_token}`,
+        'Session Started! ✅',
+        `Your Proximity Token: ${sessionData.proximity_token}\n\nIMPORTANT: Change your Bluetooth name to:\n\nATTENDEASE-${sessionData.proximity_token}\n\nThen keep Bluetooth ON for students to detect you.`,
         [
           { text: 'Open BT Settings', onPress: openBluetoothSettings },
           { text: 'OK' },
         ]
       );
     } catch (error) {
+      console.error('Start session error:', error.response?.data);
       Alert.alert('Error', error.response?.data?.error || 'Failed to start session');
     } finally {
       setLoading(false);
@@ -400,22 +390,13 @@ export default function StartSessionScreen({ navigation, route }) {
             <Text style={styles.courseCode}>#{course.course_code}</Text>
           </View>
 
-          {/* Bluetooth Toggle */}
-          <View style={styles.bluetoothSection}>
-            <View style={styles.bluetoothHeader}>
-              <Text style={styles.sectionTitle}>📡 Bluetooth</Text>
-              <TouchableOpacity
-                style={[styles.statusBadge, isBluetoothOn && styles.statusBadgeOn]}
-                onPress={handleBluetoothToggle}
-              >
-                <Text style={styles.statusText}>
-                  {isBluetoothOn ? 'ON ✓' : 'OFF'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {deviceAddress && (
-              <Text style={styles.deviceAddress}>Device: {deviceAddress}</Text>
-            )}
+          {/* Info Box */}
+          <View style={styles.infoBox}>
+            <Text style={styles.infoTitle}>📱 How it works:</Text>
+            <Text style={styles.infoText}>1. Start the session</Text>
+            <Text style={styles.infoText}>2. You'll get a proximity token</Text>
+            <Text style={styles.infoText}>3. Change your Bluetooth name</Text>
+            <Text style={styles.infoText}>4. Students can scan and mark attendance</Text>
           </View>
 
           {/* Time Selection */}
@@ -445,9 +426,9 @@ export default function StartSessionScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity
-            style={[styles.startButton, (!isBluetoothOn || loading) && styles.buttonDisabled]}
+            style={[styles.startButton, loading && styles.buttonDisabled]}
             onPress={handleStartSession}
-            disabled={!isBluetoothOn || loading}
+            disabled={loading}
           >
             <Text style={styles.startButtonText}>
               {loading ? 'Starting...' : '🚀 Start Attendance Session'}
@@ -581,6 +562,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: COLORS.darkGray,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    color: COLORS.lightGray,
+    marginBottom: 6,
+    lineHeight: 20,
   },
   bluetoothSection: {
     backgroundColor: COLORS.darkGray,
