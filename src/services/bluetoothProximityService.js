@@ -138,34 +138,69 @@ export async function scanForTeacherDevice(sessionToken) {
     // Try BLE scanning first (faster and better)
     try {
       const manager = new BleManager();
+      
+      // Check BLE state first
+      const state = await manager.state();
+      console.log('📱 BLE Manager state:', state);
+      
+      if (state !== 'PoweredOn') {
+        console.log('⚠️ BLE not powered on, using classic Bluetooth');
+        return await scanClassicBluetooth(sessionToken);
+      }
 
-      // Scan for BLE devices for 5 seconds
+      // Scan for BLE devices for 8 seconds
       return new Promise((resolve) => {
         let found = false;
         const targetServiceUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
         
-        console.log('🔵 Starting BLE scan...');
+        console.log('🔵 Starting BLE scan for service:', targetServiceUUID);
         
-        manager.startDeviceScan([targetServiceUUID], null, (error, device) => {
+        // Scan for all devices (not just with specific service)
+        manager.startDeviceScan(null, null, (error, device) => {
           if (error) {
-            console.error('BLE Scan error:', error);
+            console.error('BLE Scan error:', error.message);
             return;
           }
 
-          if (device && device.serviceData && device.serviceData[targetServiceUUID]) {
-            const tokenData = device.serviceData[targetServiceUUID];
-            // Convert base64 to string
-            const detectedToken = Buffer.from(tokenData, 'base64').toString('utf8');
+          if (device && device.serviceData) {
+            // Check if device has our service UUID
+            const serviceData = device.serviceData[targetServiceUUID];
             
-            console.log(`📱 Found BLE device with token: ${detectedToken}`);
+            if (serviceData) {
+              try {
+                // serviceData is base64 encoded, decode it
+                const decodedToken = atob(serviceData);
+                console.log(`📱 Found BLE device with token: ${decodedToken}, looking for: ${sessionToken}`);
+                
+                if (decodedToken === sessionToken && !found) {
+                  found = true;
+                  manager.stopDeviceScan();
+                  console.log('✅ BLE token match!');
+                  resolve({
+                    found: true,
+                    device: { name: `ATTENDEASE-${decodedToken}`, address: device.id },
+                    token: decodedToken,
+                    message: 'Teacher device found via BLE!',
+                  });
+                }
+              } catch (decodeError) {
+                console.log('⚠️ Error decoding service data:', decodeError.message);
+              }
+            }
+          }
+          
+          // Also check device name as fallback
+          if (device && device.name && device.name.startsWith('ATTENDEASE-')) {
+            const detectedToken = device.name.replace('ATTENDEASE-', '');
+            console.log(`📱 Found BLE device by name: ${device.name}`);
             
             if (detectedToken === sessionToken && !found) {
               found = true;
               manager.stopDeviceScan();
-              console.log('✅ BLE token match!');
+              console.log('✅ BLE name match!');
               resolve({
                 found: true,
-                device: { name: `ATTENDEASE-${detectedToken}`, address: device.id },
+                device: { name: device.name, address: device.id },
                 token: detectedToken,
                 message: 'Teacher device found via BLE!',
               });
@@ -173,7 +208,7 @@ export async function scanForTeacherDevice(sessionToken) {
           }
         });
 
-        // Timeout after 5 seconds
+        // Timeout after 8 seconds
         setTimeout(() => {
           manager.stopDeviceScan();
           if (!found) {
@@ -181,10 +216,10 @@ export async function scanForTeacherDevice(sessionToken) {
             // Fallback to classic Bluetooth
             scanClassicBluetooth(sessionToken).then(resolve);
           }
-        }, 5000);
+        }, 8000);
       });
     } catch (bleError) {
-      console.log('⚠️ BLE not available, using classic Bluetooth:', bleError.message);
+      console.log('⚠️ BLE error, using classic Bluetooth:', bleError.message);
       // Fallback to classic Bluetooth
       return await scanClassicBluetooth(sessionToken);
     }
