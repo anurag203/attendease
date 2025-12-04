@@ -18,23 +18,11 @@ export default function BluetoothSetupScreen({ navigation }) {
   const [macAddress, setMacAddress] = useState(user?.bluetooth_mac || '');
   const [loading, setLoading] = useState(false);
 
-  const formatMacAddress = (text) => {
-    // Remove all non-hex characters
-    const cleaned = text.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-    
-    // Add colons every 2 characters
-    let formatted = '';
-    for (let i = 0; i < cleaned.length && i < 12; i++) {
-      if (i > 0 && i % 2 === 0) {
-        formatted += ':';
-      }
-      formatted += cleaned[i];
-    }
-    return formatted;
-  };
-
   const handleMacChange = (text) => {
-    setMacAddress(formatMacAddress(text));
+    // Allow hex characters and colons, convert to uppercase
+    const cleaned = text.replace(/[^0-9A-Fa-f:]/g, '').toUpperCase();
+    // Limit to 17 characters (XX:XX:XX:XX:XX:XX)
+    setMacAddress(cleaned.slice(0, 17));
   };
 
   const handleSave = async () => {
