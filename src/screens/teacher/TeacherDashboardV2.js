@@ -107,7 +107,7 @@ export default function TeacherDashboard({ navigation }) {
         <View style={styles.cardHeader}>
           <View style={styles.courseInfo}>
             <Text style={styles.courseName}>{course.course_name}</Text>
-            <Text style={styles.courseCode}>#{course.course_code}</Text>
+            <Text style={styles.courseCode}>{course.course_code}</Text>
           </View>
           <TouchableOpacity
             style={styles.deleteButton}
@@ -120,19 +120,10 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.cardDivider} />
+
         <View style={styles.cardDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>🎓</Text>
-            <Text style={styles.detailText}>{course.degree}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📖</Text>
-            <Text style={styles.detailText}>{course.branch}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📅</Text>
-            <Text style={styles.detailText}>{formatYear(course.year)}</Text>
-          </View>
+          <Text style={styles.detailText}>🎓 {course.degree}  •  📖 {course.branch}  •  📅 {formatYear(course.year)}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -241,9 +232,9 @@ const styles = StyleSheet.create({
   },
   courseCard: {
     backgroundColor: COLORS.darkGray,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
   },
@@ -287,15 +278,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   courseName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.white,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   courseCode: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: COLORS.mediumGray,
+    marginVertical: 12,
   },
   deleteButton: {
     padding: 8,
@@ -309,25 +305,11 @@ const styles = StyleSheet.create({
   },
   cardDetails: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  detailIcon: {
-    fontSize: 14,
-    marginRight: 6,
   },
   detailText: {
     fontSize: 13,
     color: COLORS.lightGray,
-    fontWeight: '500',
   },
   fab: {
     position: 'absolute',
