@@ -1,5 +1,6 @@
 import { PermissionsAndroid, Platform, NativeModules, Linking, Alert } from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
+import { BleManager } from 'react-native-ble-plx';
 
 /**
  * Bluetooth Proximity Service
@@ -103,87 +104,146 @@ export const requestEnableBluetooth = async () => {
 };
 
 /**
- * STUDENT: Scan for teacher's device by token
+ * Scan for teacher's BLE advertisement with the proximity token
+ * @param {string} sessionToken - The 4-digit proximity token
+ * @returns {Promise<{found: boolean, device: object, token: string, message: string}>}
  */
-export const scanForTeacherDevice = async (sessionToken) => {
+export async function scanForTeacherDevice(sessionToken) {
   try {
-    console.log('🔍 Starting scan for teacher device with token:', sessionToken);
-
-    // Check permissions
-    const hasPermission = await requestBluetoothPermissions();
-    if (!hasPermission) {
-      throw new Error('Bluetooth permissions not granted');
-    }
-
-    // Check if Bluetooth is enabled
-    const isEnabled = await checkBluetoothEnabled();
-    if (!isEnabled) {
-      const enabled = await requestEnableBluetooth();
-      if (!enabled) {
-        throw new Error('Bluetooth is not enabled');
-      }
-    }
-
-    // Expected device name
-    const expectedName = `${ATTENDEASE_PREFIX}${sessionToken}`;
-    console.log('📍 Looking for device name:', expectedName);
-
-    // Start discovery
-    const isDiscovering = await RNBluetoothClassic.isDiscovering();
-    if (isDiscovering) {
-      await RNBluetoothClassic.cancelDiscovery();
-    }
-
-    const devices = await RNBluetoothClassic.startDiscovery();
-    console.log(`✅ Found ${devices.length} devices`);
-
-    // Log all devices for debugging
-    console.log('📱 Found devices:');
-    devices.forEach((device, index) => {
-      console.log(`   ${index + 1}. ${device.name || 'Unknown'} - ${device.address}`);
-    });
-
-    // Look for teacher's device
-    const teacherDevice = devices.find(device => {
-      const deviceName = device.name || '';
-      return deviceName.includes(expectedName) || deviceName.startsWith(ATTENDEASE_PREFIX);
-    });
-
-    if (teacherDevice) {
-      console.log('✅ Teacher device found!', teacherDevice.name);
-      return {
-        found: true,
-        device: teacherDevice,
-        token: sessionToken,
-      };
-    } else {
-      console.log('❌ Teacher device not found nearby');
-      
-      // Check if any ATTENDEASE devices found (different token)
-      const otherAttendease = devices.find(d => 
-        (d.name || '').startsWith(ATTENDEASE_PREFIX)
-      );
-      
-      if (otherAttendease) {
-        return {
-          found: false,
-          reason: 'wrong_session',
-          message: 'Found attendance device but for different session',
-        };
-      }
-
+    console.log('📡 Starting BLE scan for token:', sessionToken);
+    
+    // Check permissions first
+    const hasPermissions = await requestBluetoothPermissions();
+    if (!hasPermissions) {
       return {
         found: false,
-        reason: 'not_nearby',
-        message: 'Teacher device not found nearby. Move closer and try again.',
+        device: null,
+        token: null,
+        message: 'Bluetooth permissions not granted',
       };
+    }
+
+    // Check Bluetooth is ON
+    const isOn = await checkBluetoothState();
+    if (!isOn) {
+      return {
+        found: false,
+        device: null,
+        token: null,
+        message: 'Bluetooth is OFF. Please enable Bluetooth.',
+      };
+    }
+
+    // Try BLE scanning first (faster and better)
+    try {
+      const manager = new BleManager();
+
+      // Scan for BLE devices for 5 seconds
+      return new Promise((resolve) => {
+        let found = false;
+        const targetServiceUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
+        
+        console.log('🔵 Starting BLE scan...');
+        
+        manager.startDeviceScan([targetServiceUUID], null, (error, device) => {
+          if (error) {
+            console.error('BLE Scan error:', error);
+            return;
+          }
+
+          if (device && device.serviceData && device.serviceData[targetServiceUUID]) {
+            const tokenData = device.serviceData[targetServiceUUID];
+            // Convert base64 to string
+            const detectedToken = Buffer.from(tokenData, 'base64').toString('utf8');
+            
+            console.log(`📱 Found BLE device with token: ${detectedToken}`);
+            
+            if (detectedToken === sessionToken && !found) {
+              found = true;
+              manager.stopDeviceScan();
+              console.log('✅ BLE token match!');
+              resolve({
+                found: true,
+                device: { name: `ATTENDEASE-${detectedToken}`, address: device.id },
+                token: detectedToken,
+                message: 'Teacher device found via BLE!',
+              });
+            }
+          }
+        });
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          manager.stopDeviceScan();
+          if (!found) {
+            console.log('⏰ BLE scan timeout, trying classic Bluetooth...');
+            // Fallback to classic Bluetooth
+            scanClassicBluetooth(sessionToken).then(resolve);
+          }
+        }, 5000);
+      });
+    } catch (bleError) {
+      console.log('⚠️ BLE not available, using classic Bluetooth:', bleError.message);
+      // Fallback to classic Bluetooth
+      return await scanClassicBluetooth(sessionToken);
     }
 
   } catch (error) {
-    console.error('❌ Error scanning for teacher:', error);
-    throw error;
+    console.error('❌ Scan error:', error);
+    return {
+      found: false,
+      device: null,
+      token: null,
+      message: `Scan failed: ${error.message}`,
+    };
   }
-};
+}
+
+/**
+ * Fallback: Scan using classic Bluetooth
+ */
+async function scanClassicBluetooth(sessionToken) {
+  try {
+    const targetName = `ATTENDEASE-${sessionToken}`;
+    console.log('🔎 Looking for device name:', targetName);
+
+    const devices = await RNBluetoothClassic.startDiscovery();
+    console.log(`📡 Found ${devices.length} Bluetooth devices`);
+
+    for (const device of devices) {
+      if (device.name && device.name.startsWith('ATTENDEASE-')) {
+        const detectedToken = device.name.replace('ATTENDEASE-', '');
+        
+        if (detectedToken === sessionToken) {
+          console.log('✅ Found matching device!');
+          return {
+            found: true,
+            device: device,
+            token: detectedToken,
+            message: 'Teacher device found!',
+          };
+        }
+      }
+    }
+
+    console.log('❌ Teacher device not found');
+    return {
+      found: false,
+      device: null,
+      token: null,
+      message: `Teacher device "${targetName}" not found nearby`,
+    };
+
+  } catch (error) {
+    console.error('❌ Classic BT scan error:', error);
+    return {
+      found: false,
+      device: null,
+      token: null,
+      message: `Scan failed: ${error.message}`,
+    };
+  }
+}
 
 /**
  * STUDENT: Quick proximity check

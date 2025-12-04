@@ -264,6 +264,23 @@ export default function StartSessionScreen({ navigation, route }) {
   };
 
   const handleStartSession = async () => {
+    // Check Bluetooth is ON first
+    const btState = await checkBluetoothState();
+    if (!btState) {
+      Alert.alert(
+        'Bluetooth Required',
+        'Please enable Bluetooth to start broadcasting',
+        [
+          { text: 'Enable', onPress: async () => {
+            await enableBluetooth();
+            handleStartSession();
+          }},
+          { text: 'Cancel' }
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await sessionAPI.startSession({
@@ -492,26 +509,25 @@ export default function StartSessionScreen({ navigation, route }) {
         <Text style={styles.sessionCourseCode}>#{course.course_code}</Text>
       </View>
 
-      {/* Proximity Token Card */}
+      {/* BLE Broadcasting Status Card */}
       {proximityToken && (
-        <View style={styles.tokenCard}>
-          <Text style={styles.tokenLabel}>📱 BLUETOOTH NAME:</Text>
-          <TouchableOpacity onPress={copyTokenToClipboard}>
-            <Text style={styles.tokenValue}>ATTENDEASE-{proximityToken}</Text>
-            <Text style={styles.tokenHint}>Tap to copy</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.btSettingsButton} onPress={openBluetoothSettings}>
-            <Text style={styles.btSettingsText}>⚙️ Open Bluetooth Settings</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.instructionsBox}>
-            <Text style={styles.instructionsTitle}>📋 Setup Instructions:</Text>
-            <Text style={styles.instructionText}>1. Tap "Open Bluetooth Settings" above</Text>
-            <Text style={styles.instructionText}>2. Tap your device name at the top</Text>
-            <Text style={styles.instructionText}>3. Change to: ATTENDEASE-{proximityToken}</Text>
-            <Text style={styles.instructionText}>4. Keep Bluetooth ON</Text>
+        <View style={styles.broadcastCard}>
+          <View style={styles.broadcastHeader}>
+            <Text style={styles.broadcastIcon}>📡</Text>
+            <View style={styles.broadcastInfo}>
+              <Text style={styles.broadcastTitle}>Broadcasting Active</Text>
+              <Text style={styles.broadcastSubtitle}>Students can now detect you</Text>
+            </View>
           </View>
+          
+          <View style={styles.tokenDisplay}>
+            <Text style={styles.tokenDisplayLabel}>Token:</Text>
+            <Text style={styles.tokenDisplayValue}>{proximityToken}</Text>
+          </View>
+          
+          <Text style={styles.broadcastMessage}>
+            ✨ Your phone is automatically broadcasting via BLE. Keep Bluetooth ON for students to mark attendance.
+          </Text>
         </View>
       )}
 
@@ -832,66 +848,61 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.white,
   },
-  // Proximity Token Card Styles
-  tokenCard: {
-    backgroundColor: COLORS.darkGray,
+  // BLE Broadcasting Card Styles
+  broadcastCard: {
+    backgroundColor: '#064e3b',
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 20,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: '#10b981',
   },
-  tokenLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.lightGray,
-    marginBottom: 8,
-  },
-  tokenValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    textAlign: 'center',
-    letterSpacing: 2,
-    marginVertical: 8,
-  },
-  tokenHint: {
-    fontSize: 12,
-    color: COLORS.lightGray,
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginBottom: 16,
-  },
-  btSettingsButton: {
-    backgroundColor: COLORS.primary,
-    padding: 14,
-    borderRadius: 12,
+  broadcastHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
-  btSettingsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.white,
+  broadcastIcon: {
+    fontSize: 40,
+    marginRight: 16,
   },
-  instructionsBox: {
-    backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
+  broadcastInfo: {
+    flex: 1,
   },
-  instructionsTitle: {
-    fontSize: 14,
+  broadcastTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.white,
+    color: '#10b981',
+    marginBottom: 4,
+  },
+  broadcastSubtitle: {
+    fontSize: 14,
+    color: COLORS.lightGray,
+  },
+  tokenDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.darkGray,
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 12,
   },
-  instructionText: {
+  tokenDisplayLabel: {
+    fontSize: 14,
+    color: COLORS.lightGray,
+    marginRight: 12,
+  },
+  tokenDisplayValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    letterSpacing: 3,
+  },
+  broadcastMessage: {
     fontSize: 13,
     color: COLORS.lightGray,
     lineHeight: 20,
-    marginBottom: 6,
+    textAlign: 'center',
   },
 });
