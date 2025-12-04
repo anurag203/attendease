@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const classRoutes = require('./routes/classes');
 const sessionRoutes = require('./routes/sessions');
 const attendanceRoutes = require('./routes/attendance');
+const adminRoutes = require('./routes/admin');
 const { runMigrations } = require('./config/migrate');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', classRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root route
 app.get('/', (req, res) => {
