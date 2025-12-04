@@ -560,15 +560,11 @@ exports.verifyBeaconToken = async (req, res) => {
 exports.verifyProximityAndMarkAttendance = async (req, res) => {
   try {
     const { id: sessionId } = req.params;
-    const { detectedToken, deviceName } = req.body;
+    const { deviceAddress } = req.body;
 
-    if (!detectedToken) {
-      return res.status(400).json({ error: 'Detected token is required' });
-    }
+    console.log(`🔍 Proximity verification: session=${sessionId}, student=${req.user.id}, device=${deviceAddress}`);
 
-    console.log(`🔍 Proximity verification: session=${sessionId}, token=${detectedToken}, device=${deviceName}`);
-
-    // Get active session with proximity token
+    // Get active session
     const sessionResult = await pool.query(
       'SELECT * FROM attendance_sessions WHERE id = $1 AND status = $2',
       [sessionId, 'active']
@@ -579,17 +575,7 @@ exports.verifyProximityAndMarkAttendance = async (req, res) => {
     }
 
     const session = sessionResult.rows[0];
-
-    // Verify proximity token matches
-    if (session.proximity_token !== detectedToken) {
-      console.log(`❌ Token mismatch: expected=${session.proximity_token}, got=${detectedToken}`);
-      return res.status(401).json({ 
-        error: 'Invalid proximity token',
-        message: 'The detected token does not match the active session. Make sure you are near the correct teacher.',
-      });
-    }
-
-    console.log(`✅ Proximity token verified for session ${sessionId}, student ${req.user.id}`);
+    console.log(`✅ Teacher device found nearby for session ${sessionId}, student ${req.user.id}`);
 
     // Check if already marked
     const existingAttendance = await pool.query(
