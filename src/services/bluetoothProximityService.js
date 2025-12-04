@@ -68,15 +68,28 @@ export async function scanForTeacherDevice() {
     const devices = await RNBluetoothClassic.startDiscovery();
     console.log(`📱 Found ${devices.length} Bluetooth devices`);
 
-    // Log all devices
+    // Log all devices with comparison
+    console.log('📋 Comparing each device with teacher MAC:', TEACHER_MAC_ADDRESS);
+    console.log('─'.repeat(50));
+    
+    let teacherDevice = null;
     devices.forEach(device => {
-      console.log(`  - ${device.name || 'Unknown'} [${device.address}]`);
+      const deviceMAC = device.address.toUpperCase();
+      const targetMAC = TEACHER_MAC_ADDRESS.toUpperCase();
+      const isMatch = deviceMAC === targetMAC;
+      
+      console.log(`  📱 ${device.name || 'Unknown'}`);
+      console.log(`     Device MAC:  ${deviceMAC}`);
+      console.log(`     Teacher MAC: ${targetMAC}`);
+      console.log(`     Match: ${isMatch ? '✅ YES!' : '❌ No'}`);
+      console.log('');
+      
+      if (isMatch) {
+        teacherDevice = device;
+      }
     });
-
-    // Look for teacher's MAC address
-    const teacherDevice = devices.find(device => 
-      device.address.toUpperCase() === TEACHER_MAC_ADDRESS.toUpperCase()
-    );
+    
+    console.log('─'.repeat(50));
 
     // Format all devices for display
     const allDevices = devices.map(d => ({
