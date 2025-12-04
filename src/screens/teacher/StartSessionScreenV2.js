@@ -806,6 +806,7 @@ const styles = StyleSheet.create({
   activeStatusBar: {
     backgroundColor: '#10b981',
     marginHorizontal: 20,
+    marginTop: 16,
     marginBottom: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
