@@ -97,6 +97,7 @@ exports.register = async (req, res) => {
         branch: user.branch,
         year: user.year,
         department: user.department,
+        bluetooth_mac: user.bluetooth_mac,
       },
     });
   } catch (error) {
@@ -145,11 +146,47 @@ exports.login = async (req, res) => {
         branch: user.branch,
         year: user.year,
         department: user.department,
+        bluetooth_mac: user.bluetooth_mac,
       },
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Server error during login' });
+  }
+};
+
+// @desc    Update teacher's Bluetooth MAC address
+// @route   PUT /api/auth/bluetooth-mac
+exports.updateBluetoothMac = async (req, res) => {
+  try {
+    const { bluetooth_mac } = req.body;
+    const userId = req.user.id;
+
+    if (req.user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Only teachers can set Bluetooth MAC address' });
+    }
+
+    // Validate MAC address format (XX:XX:XX:XX:XX:XX)
+    const macRegex = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
+    if (!bluetooth_mac || !macRegex.test(bluetooth_mac)) {
+      return res.status(400).json({ error: 'Invalid MAC address format. Use XX:XX:XX:XX:XX:XX' });
+    }
+
+    const result = await pool.query(
+      'UPDATE users SET bluetooth_mac = $1 WHERE id = $2 RETURNING id, email, full_name, role, department, bluetooth_mac',
+      [bluetooth_mac.toUpperCase(), userId]
+    );
+
+    console.log(`✅ Teacher ${userId} updated Bluetooth MAC to: ${bluetooth_mac.toUpperCase()}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Bluetooth MAC address updated successfully',
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Update Bluetooth MAC error:', error);
+    res.status(500).json({ error: 'Server error while updating Bluetooth MAC' });
   }
 };
 

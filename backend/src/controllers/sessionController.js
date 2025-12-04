@@ -87,8 +87,9 @@ exports.getActiveSessions = async (req, res) => {
       params = [req.user.id];
     } else {
       // Get active sessions for student's courses with attendance status
+      // Include teacher_bluetooth_mac for proximity scanning
       query = `
-        SELECT s.*, c.course_name, c.course_code, u.full_name as teacher_name,
+        SELECT s.*, c.course_name, c.course_code, c.teacher_bluetooth_mac, u.full_name as teacher_name,
                CASE WHEN a.id IS NOT NULL THEN true ELSE false END as attendance_marked
         FROM attendance_sessions s
         JOIN courses c ON s.course_id = c.id

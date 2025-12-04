@@ -11,10 +11,19 @@ exports.createCourse = async (req, res) => {
       return res.status(400).json({ error: 'Please provide all required fields' });
     }
 
-    const result = await pool.query(
-      'INSERT INTO courses (teacher_id, course_name, course_code, degree, branch, year) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [teacher_id, course_name, course_code, degree, branch, year]
+    // Get teacher's Bluetooth MAC address
+    const teacherResult = await pool.query(
+      'SELECT bluetooth_mac FROM users WHERE id = $1',
+      [teacher_id]
     );
+    const teacher_bluetooth_mac = teacherResult.rows[0]?.bluetooth_mac || null;
+
+    const result = await pool.query(
+      'INSERT INTO courses (teacher_id, course_name, course_code, degree, branch, year, teacher_bluetooth_mac) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [teacher_id, course_name, course_code, degree, branch, year, teacher_bluetooth_mac]
+    );
+
+    console.log(`✅ Course created with Bluetooth MAC: ${teacher_bluetooth_mac}`);
 
     res.status(201).json({
       success: true,
