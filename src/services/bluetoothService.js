@@ -1,5 +1,6 @@
 import { PermissionsAndroid, Platform, Alert, NativeModules, Linking } from 'react-native';
 import { DeviceEventEmitter } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 
 // Try to import real Bluetooth libraries (for dev builds/APKs)
 // If they fail (Expo Go), use mocks
@@ -188,32 +189,35 @@ export const getDeviceAddress = async () => {
       return null;
     }
 
-    // DEBUG: Check what's available
-    console.log('🔍 DEBUG - CustomBluetoothModule:', !!CustomBluetoothModule);
-    if (CustomBluetoothModule) {
-      console.log('🔍 DEBUG - Available methods:', Object.keys(CustomBluetoothModule));
-      console.log('🔍 DEBUG - getAddress type:', typeof CustomBluetoothModule.getAddress);
+    // Priority 1: Use react-native-device-info getMacAddress() - most reliable!
+    try {
+      console.log('📱 Trying DeviceInfo.getMacAddress()...');
+      const macAddress = await DeviceInfo.getMacAddress();
+      console.log('📱 DeviceInfo.getMacAddress() returned:', macAddress);
+      
+      // Check if we got a valid MAC address (not the iOS default or empty)
+      if (macAddress && macAddress !== '02:00:00:00:00:00' && macAddress !== 'unknown') {
+        console.log('✅ Got REAL Bluetooth MAC address:', macAddress);
+        return macAddress;
+      } else {
+        console.log('⚠️ DeviceInfo returned invalid/default MAC:', macAddress);
+      }
+    } catch (error) {
+      console.log('⚠️ DeviceInfo.getMacAddress() failed:', error.message);
     }
 
-    // Priority 1: Get local adapter address from our custom native module
+    // Priority 2: Try custom native module
     if (CustomBluetoothModule && typeof CustomBluetoothModule.getAddress === 'function') {
-      console.log('✅ Calling CustomBluetoothModule.getAddress()...');
+      console.log('📱 Trying CustomBluetoothModule.getAddress()...');
       try {
         const address = await CustomBluetoothModule.getAddress();
-        console.log('📱 getAddress() returned:', address);
-        if (address && address !== '02:00:00:00:00:00') {
-          console.log('📱 Got LOCAL device address from custom module:', address);
+        if (address && address !== '02:00:00:00:00:00' && !address.startsWith('ANDROID-')) {
+          console.log('✅ Got address from custom module:', address);
           return address;
-        } else {
-          console.log('⚠️ Address is null or default:', address);
         }
       } catch (error) {
-        console.log('❌ Custom module getAddress EXCEPTION:', error);
-        console.log('❌ Error message:', error.message);
-        console.log('❌ Error stack:', error.stack);
+        console.log('⚠️ Custom module failed:', error.message);
       }
-    } else {
-      console.log('❌ getAddress() is NOT available on CustomBluetoothModule');
     }
     
     // Priority 2: Try RNBluetoothClassic local address (if available)
