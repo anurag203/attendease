@@ -33,37 +33,15 @@ export default function JoinSessionScreen({ navigation, route }) {
   useEffect(() => {
     init();
     
-    // Cleanup on unmount
+    // Cleanup on unmount - stop any ongoing scans
     return () => {
-      console.log('🧹 Cleaning up Bluetooth discovery...');
+      console.log('🧹 Cleaning up on screen unmount...');
+      setIsScanning(false);
       RNBluetoothClassic.cancelDiscovery().catch(err => 
         console.log('Cleanup discovery cancel (ignored):', err.message)
       );
     };
   }, []);
-
-  useEffect(() => {
-    let interval;
-    if (isBluetoothOn && !attendanceMarked) {
-      // Scan every 10 seconds (reduced frequency to avoid conflicts)
-      interval = setInterval(() => {
-        scanForTeacher();
-      }, 10000);
-      
-      // Initial scan after 1 second delay
-      setTimeout(() => {
-        scanForTeacher();
-      }, 1000);
-    } else {
-      // Cancel discovery when Bluetooth turns off or attendance marked
-      RNBluetoothClassic.cancelDiscovery().catch(() => {});
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-      // Also cancel on cleanup
-      RNBluetoothClassic.cancelDiscovery().catch(() => {});
-    };
-  }, [isBluetoothOn, attendanceMarked]);
 
   // Continuously monitor Bluetooth state (poll every 3 seconds)
   useEffect(() => {
