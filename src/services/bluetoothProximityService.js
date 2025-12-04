@@ -84,8 +84,10 @@ export async function scanForTeacherDevice(sessionToken) {
       console.log('✅ Teacher device found!', teacherDevice);
       return {
         found: true,
-        device: teacherDevice,
-        token: sessionToken,
+        device: {
+          name: teacherDevice.name || 'Teacher Device',
+          address: teacherDevice.address,
+        },
         message: 'Teacher device found nearby!',
       };
     } else {
@@ -93,7 +95,6 @@ export async function scanForTeacherDevice(sessionToken) {
       return {
         found: false,
         device: null,
-        token: null,
         message: 'Teacher device not found. Please ensure teacher is nearby with Bluetooth ON.',
       };
     }
@@ -103,7 +104,6 @@ export async function scanForTeacherDevice(sessionToken) {
     return {
       found: false,
       device: null,
-      token: null,
       message: `Scan failed: ${error.message}`,
     };
   }

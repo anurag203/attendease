@@ -28,7 +28,6 @@ export default function JoinSessionScreen({ navigation, route }) {
   const [attendanceMarked, setAttendanceMarked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [teacherFound, setTeacherFound] = useState(false);
-  const [detectedToken, setDetectedToken] = useState(null);
 
   useEffect(() => {
     init();
@@ -116,16 +115,14 @@ export default function JoinSessionScreen({ navigation, route }) {
       if (result.found) {
         console.log('✅ Teacher device found!', result.device.name);
         setTeacherFound(true);
-        setDetectedToken(result.token);
         
         if (!attendanceMarked) {
-          console.log('✅ Auto-marking attendance with proximity token...');
-          await markAttendanceWithProximity(result.token, result.device.name);
+          console.log('✅ Auto-marking attendance - teacher device found nearby!');
+          await markAttendanceWithProximity(result.device.address);
         }
       } else {
         console.log('❌ Teacher device not found:', result.message);
         setTeacherFound(false);
-        setDetectedToken(null);
       }
     } catch (error) {
       console.error('Scan error:', error);
@@ -135,16 +132,15 @@ export default function JoinSessionScreen({ navigation, route }) {
     }
   };
 
-  const markAttendanceWithProximity = async (token, deviceName) => {
+  const markAttendanceWithProximity = async (deviceAddress) => {
     setLoading(true);
     try {
-      console.log('📤 Sending proximity verification to server...');
+      console.log('📤 Marking attendance - teacher device found at:', deviceAddress);
       await sessionAPI.markAttendanceProximity(session.id, {
-        detectedToken: token,
-        deviceName: deviceName,
+        deviceAddress: deviceAddress,
       });
       setAttendanceMarked(true);
-      console.log('✅ Attendance marked successfully via proximity!');
+      console.log('✅ Attendance marked successfully!');
       Alert.alert('Success! ✅', 'Your attendance has been marked');
     } catch (error) {
       console.error('❌ Attendance marking error:', error.response?.data);
@@ -261,10 +257,10 @@ export default function JoinSessionScreen({ navigation, route }) {
                   <Text style={styles.statusIcon}>✅</Text>
                   <Text style={styles.statusTitle}>Teacher Device Found!</Text>
                   <Text style={styles.statusMessage}>
-                    Device: ATTENDEASE-{detectedToken}
+                    Teacher is nearby!
                   </Text>
                   <Text style={styles.statusMessage}>
-                    You are in range. Marking attendance...
+                    Marking attendance automatically...
                   </Text>
                 </>
               ) : (
