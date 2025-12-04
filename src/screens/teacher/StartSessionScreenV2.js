@@ -377,7 +377,8 @@ export default function StartSessionScreen({ navigation, route }) {
     <View style={styles.studentItem}>
       <Text style={styles.studentIcon}>✓</Text>
       <View style={styles.studentInfo}>
-        <Text style={styles.studentName}>{item.full_name || item.student_id}</Text>
+        <Text style={styles.studentName}>{item.full_name || 'Unknown'}</Text>
+        <Text style={styles.studentId}>{item.student_id}</Text>
         <Text style={styles.studentTime}>
           {new Date(item.marked_at).toLocaleTimeString()}
         </Text>
@@ -801,6 +802,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  studentId: {
+    fontSize: 13,
+    color: COLORS.primary,
+    marginTop: 2,
     marginBottom: 4,
   },
   studentTime: {

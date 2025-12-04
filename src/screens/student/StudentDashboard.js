@@ -172,6 +172,7 @@ export default function StudentDashboard({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
+          <Text style={styles.studentName}>{user?.full_name}</Text>
           <Text style={styles.headerTitle}>My Courses</Text>
           <Text style={styles.headerSubtitle}>
             {user?.student_id} • {user?.branch} • {formatYear(user?.year)}
@@ -241,6 +242,12 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.mediumGray,
+  },
+  studentName: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 4,
   },
   headerTitle: {
     fontSize: 28,
