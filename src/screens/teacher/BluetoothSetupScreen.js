@@ -57,6 +57,39 @@ export default function BluetoothSetupScreen({ navigation }) {
     }
   };
 
+  const handleClear = () => {
+    Alert.alert(
+      'Clear MAC Address?',
+      'This will remove your saved Bluetooth MAC address. You will need to set it up again to start sessions.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await authAPI.updateBluetoothMac('');
+              setMacAddress('');
+              
+              // Update local user state
+              if (updateUser) {
+                updateUser({ ...user, bluetooth_mac: null });
+              }
+              
+              Alert.alert('Cleared ✅', 'Bluetooth MAC address has been removed.');
+            } catch (error) {
+              console.error('Error clearing MAC address:', error);
+              Alert.alert('Error', 'Failed to clear MAC address');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -114,10 +147,20 @@ export default function BluetoothSetupScreen({ navigation }) {
         </TouchableOpacity>
 
         {user?.bluetooth_mac && (
-          <View style={styles.currentMac}>
-            <Text style={styles.currentMacLabel}>Current saved address:</Text>
-            <Text style={styles.currentMacValue}>{user.bluetooth_mac}</Text>
-          </View>
+          <>
+            <TouchableOpacity
+              style={[styles.clearButton, loading && styles.saveButtonDisabled]}
+              onPress={handleClear}
+              disabled={loading}
+            >
+              <Text style={styles.clearButtonText}>🗑️ Clear MAC Address</Text>
+            </TouchableOpacity>
+
+            <View style={styles.currentMac}>
+              <Text style={styles.currentMacLabel}>Current saved address:</Text>
+              <Text style={styles.currentMacValue}>{user.bluetooth_mac}</Text>
+            </View>
+          </>
         )}
       </View>
     </SafeAreaView>
@@ -231,6 +274,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  clearButton: {
+    backgroundColor: '#7f1d1d',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#dc2626',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fca5a5',
   },
   currentMac: {
     marginTop: 24,
