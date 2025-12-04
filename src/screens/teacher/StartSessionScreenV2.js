@@ -220,7 +220,7 @@ export default function StartSessionScreen({ navigation, route }) {
         if (remainingSeconds > 0) {
           console.log('✅ Session is active, remaining:', remainingSeconds);
           setTimeRemaining(remainingSeconds);
-          setMarkedStudents(session.marked_students || []);
+          setMarkedStudents(session.attendance || session.marked_students || []);
         } else {
           // Session has already ended
           console.log('❌ Time expired, remaining:', remainingSeconds);
@@ -308,7 +308,14 @@ export default function StartSessionScreen({ navigation, route }) {
     try {
       const response = await sessionAPI.getSession(sessionId);
       const sessionData = response.data?.data;
-      const attendanceList = sessionData?.attendance || [];
+      const attendanceList = sessionData?.attendance || sessionData?.marked_students || [];
+      
+      console.log('📊 Fetched session data:', {
+        sessionId,
+        attendanceCount: attendanceList.length,
+        totalStudents: sessionData?.total_students
+      });
+      
       setMarkedStudents(attendanceList);
       
       // Also update total students count if available from session
