@@ -175,10 +175,19 @@ exports.updateBluetoothMac = async (req, res) => {
 
       console.log(`✅ Teacher ${userId} cleared Bluetooth MAC`);
 
+      // Clear MAC from all teacher's courses too
+      const coursesCleared = await pool.query(
+        'UPDATE courses SET teacher_bluetooth_mac = NULL WHERE teacher_id = $1 RETURNING id, course_name',
+        [userId]
+      );
+      
+      console.log(`✅ Cleared MAC from ${coursesCleared.rows.length} courses`);
+
       return res.status(200).json({
         success: true,
         message: 'Bluetooth MAC address cleared successfully',
         user: result.rows[0],
+        coursesUpdated: coursesCleared.rows.length,
       });
     }
 
@@ -195,10 +204,19 @@ exports.updateBluetoothMac = async (req, res) => {
 
     console.log(`✅ Teacher ${userId} updated Bluetooth MAC to: ${bluetooth_mac.toUpperCase()}`);
 
+    // Auto-sync the new MAC address to all teacher's courses
+    const coursesUpdated = await pool.query(
+      'UPDATE courses SET teacher_bluetooth_mac = $1 WHERE teacher_id = $2 RETURNING id, course_name',
+      [bluetooth_mac.toUpperCase(), userId]
+    );
+    
+    console.log(`✅ Auto-synced MAC to ${coursesUpdated.rows.length} courses:`, coursesUpdated.rows.map(c => c.course_name));
+
     res.status(200).json({
       success: true,
       message: 'Bluetooth MAC address updated successfully',
       user: result.rows[0],
+      coursesUpdated: coursesUpdated.rows.length,
     });
   } catch (error) {
     console.error('Update Bluetooth MAC error:', error);
