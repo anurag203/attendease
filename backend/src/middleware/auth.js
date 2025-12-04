@@ -14,10 +14,22 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const result = await pool.query(
-      'SELECT id, email, full_name, role, student_id, degree, branch, year, department, bluetooth_mac FROM users WHERE id = $1', 
-      [decoded.id]
-    );
+    
+    // Try with bluetooth_mac first, fallback to without if column doesn't exist
+    let result;
+    try {
+      result = await pool.query(
+        'SELECT id, email, full_name, role, student_id, degree, branch, year, department, bluetooth_mac FROM users WHERE id = $1', 
+        [decoded.id]
+      );
+    } catch (queryError) {
+      // Fallback if bluetooth_mac column doesn't exist yet
+      console.log('bluetooth_mac column may not exist, using fallback query');
+      result = await pool.query(
+        'SELECT id, email, full_name, role, student_id, degree, branch, year, department FROM users WHERE id = $1', 
+        [decoded.id]
+      );
+    }
     
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'User not found' });
@@ -26,6 +38,7 @@ const protect = async (req, res, next) => {
     req.user = result.rows[0];
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error.message);
     return res.status(401).json({ error: 'Not authorized to access this route' });
   }
 };
