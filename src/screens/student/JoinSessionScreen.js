@@ -126,10 +126,12 @@ export default function JoinSessionScreen({ navigation, route }) {
 
     setIsScanning(true);
     try {
+      const teacherMac = session.teacher_bluetooth_mac;
       console.log('🔍 Scanning for nearby Bluetooth devices...');
+      console.log('📡 Looking for teacher MAC:', teacherMac || 'NOT CONFIGURED');
       
-      // Scan for teacher device
-      const result = await scanForTeacherDevice();
+      // Scan for teacher device using MAC from session
+      const result = await scanForTeacherDevice(teacherMac);
       
       // Store all found devices for display
       if (result.allDevices && result.allDevices.length > 0) {
@@ -182,7 +184,8 @@ export default function JoinSessionScreen({ navigation, route }) {
   };
 
   const renderDevice = ({ item }) => {
-    const isTeacher = item.address?.toUpperCase() === '44:16:FA:1D:D2:8D';
+    const teacherMac = session.teacher_bluetooth_mac?.toUpperCase();
+    const isTeacher = teacherMac && item.address?.toUpperCase() === teacherMac;
     return (
       <View style={[styles.deviceItem, isTeacher && styles.deviceItemTeacher]}>
         <View style={styles.deviceInfo}>

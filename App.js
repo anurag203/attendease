@@ -19,6 +19,7 @@ import StartSessionScreen from './src/screens/teacher/StartSessionScreenV2';
 import SessionHistoryScreen from './src/screens/teacher/SessionHistoryScreen';
 import CourseDetailsScreen from './src/screens/teacher/CourseDetailsScreen';
 import EditStudentsScreen from './src/screens/teacher/EditStudentsScreen';
+import BluetoothSetupScreen from './src/screens/teacher/BluetoothSetupScreen';
 
 // Student Screens
 import StudentDashboard from './src/screens/student/StudentDashboard';
@@ -58,6 +59,7 @@ function TeacherStack() {
       <Stack.Screen name="SessionHistory" component={SessionHistoryScreen} />
       <Stack.Screen name="CourseDetails" component={CourseDetailsScreen} />
       <Stack.Screen name="EditStudents" component={EditStudentsScreen} />
+      <Stack.Screen name="BluetoothSetup" component={BluetoothSetupScreen} />
     </Stack.Navigator>
   );
 }

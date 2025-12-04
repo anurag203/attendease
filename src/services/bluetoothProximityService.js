@@ -3,9 +3,8 @@ import RNBluetoothClassic from 'react-native-bluetooth-classic';
 
 /**
  * Bluetooth Proximity Service - Simple MAC Address Scanning
- * Teacher's hardcoded Bluetooth MAC address
+ * Teacher's MAC address is now passed from the course/session data
  */
-const TEACHER_MAC_ADDRESS = '44:16:FA:1D:D2:8D';
 
 /**
  * Request Bluetooth permissions
@@ -38,11 +37,23 @@ export const requestBluetoothPermissions = async () => {
 
 /**
  * Scan for teacher's Bluetooth device by MAC address
+ * @param {string} teacherMacAddress - The teacher's Bluetooth MAC address from the course
  * @returns {Promise<{found: boolean, device: object, allDevices: array, message: string}>}
  */
-export async function scanForTeacherDevice() {
+export async function scanForTeacherDevice(teacherMacAddress) {
   try {
-    console.log('🔍 Scanning for teacher device (MAC: ' + TEACHER_MAC_ADDRESS + ')');
+    if (!teacherMacAddress) {
+      console.log('⚠️ No teacher MAC address provided');
+      return {
+        found: false,
+        device: null,
+        allDevices: [],
+        message: 'Teacher has not configured their Bluetooth address yet.',
+      };
+    }
+    
+    const targetMAC = teacherMacAddress.toUpperCase();
+    console.log('🔍 Scanning for teacher device (MAC: ' + targetMAC + ')');
 
     // Request permissions first
     const hasPermissions = await requestBluetoothPermissions();
@@ -92,13 +103,12 @@ export async function scanForTeacherDevice() {
     console.log(`📱 Found ${devices.length} Bluetooth devices`);
 
     // Log all devices with comparison
-    console.log('📋 Comparing each device with teacher MAC:', TEACHER_MAC_ADDRESS);
+    console.log('📋 Comparing each device with teacher MAC:', targetMAC);
     console.log('─'.repeat(50));
     
     let teacherDevice = null;
     devices.forEach(device => {
       const deviceMAC = device.address.toUpperCase();
-      const targetMAC = TEACHER_MAC_ADDRESS.toUpperCase();
       const isMatch = deviceMAC === targetMAC;
       
       console.log(`  📱 ${device.name || 'Unknown'}`);

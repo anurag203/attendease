@@ -80,6 +80,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = async (updatedUser) => {
+    try {
+      setUser(updatedUser);
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Update user error:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -89,6 +98,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >
