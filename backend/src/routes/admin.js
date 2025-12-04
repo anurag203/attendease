@@ -74,4 +74,36 @@ router.post('/migrate-bluetooth-mac', async (req, res) => {
   }
 });
 
+// Update all teacher's courses with their current MAC address
+router.post('/sync-mac-to-courses', async (req, res) => {
+  try {
+    console.log('🔧 Syncing teacher MAC addresses to their courses...');
+    
+    // Update all courses with their teacher's current MAC address
+    const result = await pool.query(`
+      UPDATE courses c
+      SET teacher_bluetooth_mac = u.bluetooth_mac
+      FROM users u
+      WHERE c.teacher_id = u.id
+      AND u.role = 'teacher'
+      AND u.bluetooth_mac IS NOT NULL
+      RETURNING c.id, c.course_name, c.teacher_bluetooth_mac
+    `);
+    
+    console.log(`✅ Updated ${result.rows.length} courses with teacher MAC addresses`);
+    
+    res.json({ 
+      success: true, 
+      message: `Synced MAC address to ${result.rows.length} courses`,
+      updated: result.rows
+    });
+  } catch (error) {
+    console.error('❌ Sync MAC error:', error);
+    res.status(500).json({ 
+      error: 'Failed to sync MAC addresses', 
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;
