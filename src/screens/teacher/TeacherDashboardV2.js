@@ -235,15 +235,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContent: {
-    padding: 20,
+    paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 100,
   },
   courseCard: {
     backgroundColor: COLORS.darkGray,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 18,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: COLORS.mediumGray,
   },
