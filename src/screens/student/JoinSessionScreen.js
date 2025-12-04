@@ -42,6 +42,30 @@ export default function JoinSessionScreen({ navigation, route }) {
     };
   }, []);
 
+  // Auto-scan every 10 seconds when Bluetooth is ON and attendance not marked
+  useEffect(() => {
+    let interval;
+    if (isBluetoothOn && !attendanceMarked) {
+      // Initial scan after 1 second
+      const initialTimeout = setTimeout(() => {
+        scanForTeacher();
+      }, 1000);
+      
+      // Then scan every 10 seconds
+      interval = setInterval(() => {
+        scanForTeacher();
+      }, 10000);
+      
+      return () => {
+        clearTimeout(initialTimeout);
+        clearInterval(interval);
+      };
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isBluetoothOn, attendanceMarked]);
+
   // Continuously monitor Bluetooth state (poll every 3 seconds)
   useEffect(() => {
     const checkBluetoothContinuously = async () => {
@@ -102,14 +126,18 @@ export default function JoinSessionScreen({ navigation, route }) {
 
     setIsScanning(true);
     try {
-      console.log('🔍 Scanning for teacher device with proximity token:', session.proximity_token);
+      console.log('🔍 Scanning for nearby Bluetooth devices...');
       
-      // Scan for teacher device by token
-      const result = await scanForTeacherDevice(session.proximity_token);
+      // Scan for teacher device
+      const result = await scanForTeacherDevice();
       
       // Store all found devices for display
-      if (result.device) {
+      if (result.allDevices && result.allDevices.length > 0) {
+        setDevices(result.allDevices);
+      } else if (result.device) {
         setDevices([result.device]);
+      } else {
+        setDevices([]);
       }
       
       if (result.found) {
@@ -153,22 +181,8 @@ export default function JoinSessionScreen({ navigation, route }) {
     }
   };
 
-  const handleManualMarkAttendance = async () => {
-    if (!isBluetoothOn) {
-      Alert.alert('Bluetooth Required', 'Please enable Bluetooth first');
-      return;
-    }
-
-    if (loading || isScanning) {
-      return;
-    }
-
-    // Perform a fresh scan
-    await scanForTeacher();
-  };
-
   const renderDevice = ({ item }) => {
-    const isTeacher = item.name && item.name.startsWith('ATTENDEASE-');
+    const isTeacher = item.address?.toUpperCase() === '44:16:FA:1D:D2:8D';
     return (
       <View style={[styles.deviceItem, isTeacher && styles.deviceItemTeacher]}>
         <View style={styles.deviceInfo}>
@@ -221,12 +235,6 @@ export default function JoinSessionScreen({ navigation, route }) {
           <Text style={styles.sessionTitle}>{session.course_name}</Text>
           <Text style={styles.sessionCode}>{session.course_code}</Text>
           <Text style={styles.sessionTeacher}>👨‍🏫 {session.teacher_name}</Text>
-          {session.proximity_token && (
-            <View style={styles.tokenInfo}>
-              <Text style={styles.tokenLabel}>Looking for:</Text>
-              <Text style={styles.tokenValue}>ATTENDEASE-{session.proximity_token}</Text>
-            </View>
-          )}
         </View>
 
         <View style={[styles.bluetoothSection, !isBluetoothOn && styles.bluetoothSectionWarning]}>
@@ -257,32 +265,19 @@ export default function JoinSessionScreen({ navigation, route }) {
                   <Text style={styles.statusIcon}>✅</Text>
                   <Text style={styles.statusTitle}>Teacher Device Found!</Text>
                   <Text style={styles.statusMessage}>
-                    Teacher is nearby!
-                  </Text>
-                  <Text style={styles.statusMessage}>
                     Marking attendance automatically...
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.statusIcon}>🔍</Text>
-                  <Text style={styles.statusTitle}>{isScanning ? 'Scanning...' : 'Not Found'}</Text>
+                  <Text style={styles.statusIcon}>{isScanning ? '📡' : '🔍'}</Text>
+                  <Text style={styles.statusTitle}>{isScanning ? 'Scanning...' : 'Searching for Teacher'}</Text>
                   <Text style={styles.statusMessage}>
-                    Move closer to the classroom and tap "Scan Now"
+                    {isScanning ? 'Looking for nearby devices...' : 'Auto-scanning every 10 seconds'}
                   </Text>
                 </>
               )}
             </View>
-
-            <TouchableOpacity
-              style={[styles.scanButton, (loading || isScanning) && styles.scanButtonDisabled]}
-              onPress={handleManualMarkAttendance}
-              disabled={loading || isScanning}
-            >
-              <Text style={styles.scanButtonText}>
-                {isScanning ? '🔍 Scanning...' : loading ? '⏳ Marking...' : '📡 Scan Now'}
-              </Text>
-            </TouchableOpacity>
 
             <View style={styles.devicesSection}>
               <Text style={styles.devicesTitle}>Nearby Devices ({devices.length}):</Text>

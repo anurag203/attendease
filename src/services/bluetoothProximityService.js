@@ -38,13 +38,11 @@ export const requestBluetoothPermissions = async () => {
 
 /**
  * Scan for teacher's Bluetooth device by MAC address
- * @param {string} sessionToken - The 4-digit proximity token (for logging)
- * @returns {Promise<{found: boolean, device: object, token: string, message: string}>}
+ * @returns {Promise<{found: boolean, device: object, allDevices: array, message: string}>}
  */
-export async function scanForTeacherDevice(sessionToken) {
+export async function scanForTeacherDevice() {
   try {
     console.log('🔍 Scanning for teacher device (MAC: ' + TEACHER_MAC_ADDRESS + ')');
-    console.log('📡 Session token:', sessionToken);
 
     // Request permissions first
     const hasPermissions = await requestBluetoothPermissions();
@@ -80,6 +78,12 @@ export async function scanForTeacherDevice(sessionToken) {
       device.address.toUpperCase() === TEACHER_MAC_ADDRESS.toUpperCase()
     );
 
+    // Format all devices for display
+    const allDevices = devices.map(d => ({
+      name: d.name || 'Unknown Device',
+      address: d.address,
+    }));
+
     if (teacherDevice) {
       console.log('✅ Teacher device found!', teacherDevice);
       return {
@@ -88,13 +92,15 @@ export async function scanForTeacherDevice(sessionToken) {
           name: teacherDevice.name || 'Teacher Device',
           address: teacherDevice.address,
         },
+        allDevices: allDevices,
         message: 'Teacher device found nearby!',
       };
     } else {
-      console.log('❌ Teacher device not found');
+      console.log('❌ Teacher device not found among', devices.length, 'devices');
       return {
         found: false,
         device: null,
+        allDevices: allDevices,
         message: 'Teacher device not found. Please ensure teacher is nearby with Bluetooth ON.',
       };
     }
