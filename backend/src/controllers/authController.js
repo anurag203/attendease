@@ -166,9 +166,25 @@ exports.updateBluetoothMac = async (req, res) => {
       return res.status(403).json({ error: 'Only teachers can set Bluetooth MAC address' });
     }
 
+    // Allow empty string to clear MAC address
+    if (bluetooth_mac === '' || bluetooth_mac === null) {
+      const result = await pool.query(
+        'UPDATE users SET bluetooth_mac = NULL WHERE id = $1 RETURNING id, email, full_name, role, department, bluetooth_mac',
+        [userId]
+      );
+
+      console.log(`✅ Teacher ${userId} cleared Bluetooth MAC`);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Bluetooth MAC address cleared successfully',
+        user: result.rows[0],
+      });
+    }
+
     // Validate MAC address format (XX:XX:XX:XX:XX:XX)
     const macRegex = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
-    if (!bluetooth_mac || !macRegex.test(bluetooth_mac)) {
+    if (!macRegex.test(bluetooth_mac)) {
       return res.status(400).json({ error: 'Invalid MAC address format. Use XX:XX:XX:XX:XX:XX' });
     }
 
