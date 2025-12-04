@@ -55,17 +55,40 @@ export async function scanForTeacherDevice() {
       };
     }
 
-    // Cancel any existing discovery
+    // Cancel any existing discovery and wait for it to complete
     try {
       await RNBluetoothClassic.cancelDiscovery();
       console.log('🛑 Cancelled existing discovery');
+      // Wait a bit for cancellation to fully complete
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (cancelError) {
       console.log('⚠️ No existing discovery to cancel');
     }
 
-    // Start Classic Bluetooth discovery
+    // Start Classic Bluetooth discovery with retry
     console.log('📡 Starting Bluetooth discovery...');
-    const devices = await RNBluetoothClassic.startDiscovery();
+    let devices = [];
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        devices = await RNBluetoothClassic.startDiscovery();
+        break; // Success, exit loop
+      } catch (discoveryError) {
+        console.log(`⚠️ Discovery attempt failed (${retries} retries left):`, discoveryError.message);
+        retries--;
+        if (retries > 0) {
+          // Cancel and wait before retry
+          try {
+            await RNBluetoothClassic.cancelDiscovery();
+          } catch (e) {}
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw discoveryError; // No more retries, throw error
+        }
+      }
+    }
+    
     console.log(`📱 Found ${devices.length} Bluetooth devices`);
 
     // Log all devices with comparison
