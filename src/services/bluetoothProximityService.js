@@ -145,41 +145,54 @@ export async function scanForTeacherDevice(sessionToken) {
       console.log('📱 BLE Manager state:', state);
       
       if (state !== 'PoweredOn') {
-        console.log('⚠️ BLE not powered on, using classic Bluetooth');
-        return await scanClassicBluetooth(sessionToken);
+        console.log('❌ BLE not powered on');
+        return {
+          found: false,
+          device: null,
+          token: null,
+          message: 'Bluetooth is not powered on. Please enable Bluetooth.',
+        };
       }
 
-      // Scan for BLE devices for 8 seconds
+      // Pure BLE scanning - scan for 10 seconds
       return new Promise((resolve) => {
         let found = false;
         const targetServiceUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
         
-        console.log('🔵 Starting BLE scan for service:', targetServiceUUID);
+        console.log('🔵 Starting Pure BLE scan for service:', targetServiceUUID);
+        console.log('🔍 Looking for token:', sessionToken);
         
-        // Scan for all devices (not just with specific service)
+        // Scan for all devices (not just with specific service, to maximize detection)
         manager.startDeviceScan(null, null, (error, device) => {
           if (error) {
-            console.error('BLE Scan error:', error.message);
+            console.error('❌ BLE Scan error:', error.message);
             return;
           }
 
-          if (device && device.serviceData) {
-            // Check if device has our service UUID
+          if (!device) return;
+          
+          // Log every device found for debugging
+          if (device.name) {
+            console.log(`📱 Found device: ${device.name} [${device.id}]`);
+          }
+
+          // Check service data first (primary method)
+          if (device.serviceData) {
             const serviceData = device.serviceData[targetServiceUUID];
             
             if (serviceData) {
               try {
                 // serviceData is base64 encoded, decode it
                 const decodedToken = atob(serviceData);
-                console.log(`📱 Found BLE device with token: ${decodedToken}, looking for: ${sessionToken}`);
+                console.log(`🎯 Found BLE service data! Token: ${decodedToken}, Expected: ${sessionToken}`);
                 
                 if (decodedToken === sessionToken && !found) {
                   found = true;
                   manager.stopDeviceScan();
-                  console.log('✅ BLE token match!');
+                  console.log('✅ BLE token match via service data!');
                   resolve({
                     found: true,
-                    device: { name: `ATTENDEASE-${decodedToken}`, address: device.id },
+                    device: { name: `Teacher Device`, address: device.id },
                     token: decodedToken,
                     message: 'Teacher device found via BLE!',
                   });
@@ -189,27 +202,9 @@ export async function scanForTeacherDevice(sessionToken) {
               }
             }
           }
-          
-          // Also check device name as fallback
-          if (device && device.name && device.name.startsWith('ATTENDEASE-')) {
-            const detectedToken = device.name.replace('ATTENDEASE-', '');
-            console.log(`📱 Found BLE device by name: ${device.name}`);
-            
-            if (detectedToken === sessionToken && !found) {
-              found = true;
-              manager.stopDeviceScan();
-              console.log('✅ BLE name match!');
-              resolve({
-                found: true,
-                device: { name: device.name, address: device.id },
-                token: detectedToken,
-                message: 'Teacher device found via BLE!',
-              });
-            }
-          }
         });
 
-        // Timeout after 8 seconds
+        // Timeout after 10 seconds (longer for BLE to detect advertising)
         setTimeout(async () => {
           try {
             manager.stopDeviceScan();
@@ -220,16 +215,24 @@ export async function scanForTeacherDevice(sessionToken) {
           }
           
           if (!found) {
-            console.log('⏰ BLE scan timeout, trying classic Bluetooth...');
-            // Fallback to classic Bluetooth
-            scanClassicBluetooth(sessionToken).then(resolve);
+            console.log('❌ BLE scan timeout - teacher not found');
+            resolve({
+              found: false,
+              device: null,
+              token: null,
+              message: 'Teacher device not found. Please ensure teacher has started the session and is nearby.',
+            });
           }
-        }, 8000);
+        }, 10000);
       });
     } catch (bleError) {
-      console.log('⚠️ BLE error, using classic Bluetooth:', bleError.message);
-      // Fallback to classic Bluetooth
-      return await scanClassicBluetooth(sessionToken);
+      console.error('❌ BLE scanning error:', bleError.message);
+      return {
+        found: false,
+        device: null,
+        token: null,
+        message: `BLE scan failed: ${bleError.message}`,
+      };
     }
 
   } catch (error) {
