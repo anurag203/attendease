@@ -15,6 +15,7 @@ import {
   checkBluetoothState,
   enableBluetooth,
 } from '../../services/bluetoothService';
+import { useAuth } from '../../context/AuthContext';
 import { COLORS } from '../../utils/constants';
 
 const TIME_OPTIONS = [
@@ -26,6 +27,7 @@ const TIME_OPTIONS = [
 
 export default function StartSessionScreen({ navigation, route }) {
   const { course, existingSessionId } = route.params;
+  const { user } = useAuth();
   const [isBluetoothOn, setIsBluetoothOn] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(2);
   const [sessionStarted, setSessionStarted] = useState(!!existingSessionId);
@@ -240,6 +242,19 @@ export default function StartSessionScreen({ navigation, route }) {
   };
 
   const handleStartSession = async () => {
+    // Check if teacher has configured Bluetooth MAC address
+    if (!user?.bluetooth_mac) {
+      Alert.alert(
+        'Setup Required',
+        'Please configure your Bluetooth MAC address before starting a session.',
+        [
+          { text: 'Setup Now', onPress: () => navigation.navigate('BluetoothSetup') },
+          { text: 'Cancel' }
+        ]
+      );
+      return;
+    }
+
     // Check Bluetooth is ON first
     const btState = await checkBluetoothState();
     if (!btState) {
