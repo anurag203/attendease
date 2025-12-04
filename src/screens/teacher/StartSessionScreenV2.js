@@ -7,6 +7,7 @@ import {
   Alert,
   FlatList,
   AppState,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { sessionAPI } from '../../services/api';
@@ -16,6 +17,7 @@ import {
   enableBluetooth,
   getDeviceAddress,
 } from '../../services/bluetoothService';
+import { openBluetoothSettings } from '../../services/bluetoothProximityService';
 import { COLORS } from '../../utils/constants';
 
 const TIME_OPTIONS = [
@@ -36,6 +38,7 @@ export default function StartSessionScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [proximityToken, setProximityToken] = useState(null);
 
   useEffect(() => {
     init();
@@ -276,10 +279,20 @@ export default function StartSessionScreen({ navigation, route }) {
         duration_minutes: selectedDuration,
       });
 
-      setSessionId(response.data.data.id);
+      const sessionData = response.data.data;
+      setSessionId(sessionData.id);
+      setProximityToken(sessionData.proximity_token);
       setSessionStarted(true);
       setTimeRemaining(selectedDuration * 60); // Convert to seconds
-      Alert.alert('Success', 'Attendance session started!');
+      
+      Alert.alert(
+        'Session Started!',
+        `Proximity Token: ${sessionData.proximity_token}\n\nChange your Bluetooth name to:\nATTENDEASE-${sessionData.proximity_token}`,
+        [
+          { text: 'Open BT Settings', onPress: openBluetoothSettings },
+          { text: 'OK' },
+        ]
+      );
     } catch (error) {
       Alert.alert('Error', error.response?.data?.error || 'Failed to start session');
     } finally {
@@ -292,8 +305,14 @@ export default function StartSessionScreen({ navigation, route }) {
 
     try {
       const response = await sessionAPI.getSession(sessionId);
-      const attendanceList = response.data?.data?.attendance || [];
+      const sessionData = response.data?.data;
+      const attendanceList = sessionData?.attendance || [];
       setMarkedStudents(attendanceList);
+      
+      // Update token if not set
+      if (!proximityToken && sessionData?.proximity_token) {
+        setProximityToken(sessionData.proximity_token);
+      }
     } catch (error) {
       console.error('Error fetching session data:', error);
       // Silently fail - don't show error to user during live session
@@ -439,6 +458,12 @@ export default function StartSessionScreen({ navigation, route }) {
     );
   }
 
+  const copyTokenToClipboard = () => {
+    const deviceName = `ATTENDEASE-${proximityToken}`;
+    Clipboard.setString(deviceName);
+    Alert.alert('Copied!', `"${deviceName}" copied to clipboard`);
+  };
+
   // Active session screen with circular timer
   return (
     <SafeAreaView style={styles.container}>
@@ -447,6 +472,29 @@ export default function StartSessionScreen({ navigation, route }) {
         <Text style={styles.sessionCourseName}>{course.course_name}</Text>
         <Text style={styles.sessionCourseCode}>#{course.course_code}</Text>
       </View>
+
+      {/* Proximity Token Card */}
+      {proximityToken && (
+        <View style={styles.tokenCard}>
+          <Text style={styles.tokenLabel}>📱 BLUETOOTH NAME:</Text>
+          <TouchableOpacity onPress={copyTokenToClipboard}>
+            <Text style={styles.tokenValue}>ATTENDEASE-{proximityToken}</Text>
+            <Text style={styles.tokenHint}>Tap to copy</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.btSettingsButton} onPress={openBluetoothSettings}>
+            <Text style={styles.btSettingsText}>⚙️ Open Bluetooth Settings</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.instructionsBox}>
+            <Text style={styles.instructionsTitle}>📋 Setup Instructions:</Text>
+            <Text style={styles.instructionText}>1. Tap "Open Bluetooth Settings" above</Text>
+            <Text style={styles.instructionText}>2. Tap your device name at the top</Text>
+            <Text style={styles.instructionText}>3. Change to: ATTENDEASE-{proximityToken}</Text>
+            <Text style={styles.instructionText}>4. Keep Bluetooth ON</Text>
+          </View>
+        </View>
+      )}
 
       {/* Circular Timer */}
       <View style={styles.timerSection}>
@@ -744,5 +792,67 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  // Proximity Token Card Styles
+  tokenCard: {
+    backgroundColor: COLORS.darkGray,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  tokenLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.lightGray,
+    marginBottom: 8,
+  },
+  tokenValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    textAlign: 'center',
+    letterSpacing: 2,
+    marginVertical: 8,
+  },
+  tokenHint: {
+    fontSize: 12,
+    color: COLORS.lightGray,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  btSettingsButton: {
+    backgroundColor: COLORS.primary,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  btSettingsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  instructionsBox: {
+    backgroundColor: COLORS.background,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  instructionsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 12,
+  },
+  instructionText: {
+    fontSize: 13,
+    color: COLORS.lightGray,
+    lineHeight: 20,
+    marginBottom: 6,
   },
 });
