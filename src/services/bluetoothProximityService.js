@@ -192,9 +192,39 @@ export async function scanForTeacherDevice(sessionToken) {
             
             if (serviceData) {
               try {
-                // serviceData is base64 encoded, decode it
-                const decodedToken = atob(serviceData);
-                console.log(`🎯 Found BLE service data! Token: ${decodedToken}, Expected: ${sessionToken}`);
+                let decodedToken = null;
+                
+                console.log(`📦 Raw service data type: ${typeof serviceData}`);
+                console.log(`📦 Raw service data value:`, serviceData);
+                
+                // Try multiple decoding methods
+                
+                // Method 1: Already a string (most likely)
+                if (typeof serviceData === 'string') {
+                  decodedToken = serviceData;
+                  console.log(`  Method 1 (direct string): ${decodedToken}`);
+                }
+                
+                // Method 2: Try base64 decode
+                if (!decodedToken || decodedToken === sessionToken) {
+                  try {
+                    const base64Decoded = atob(serviceData);
+                    if (base64Decoded) {
+                      console.log(`  Method 2 (base64): ${base64Decoded}`);
+                      decodedToken = base64Decoded;
+                    }
+                  } catch (e) {
+                    console.log(`  Method 2 failed: ${e.message}`);
+                  }
+                }
+                
+                // Method 3: If it's an object/buffer, try to extract
+                if (serviceData.data) {
+                  console.log(`  Method 3 (object.data): ${serviceData.data}`);
+                  decodedToken = serviceData.data;
+                }
+                
+                console.log(`🎯 Found BLE service data! Decoded: "${decodedToken}", Expected: "${sessionToken}"`);
                 
                 if (decodedToken === sessionToken && !found) {
                   found = true;
