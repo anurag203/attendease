@@ -62,7 +62,15 @@ export const courseAPI = {
 export const sessionAPI = {
   startSession: (data) => api.post('/sessions/start', data),
   getActiveSessions: () => api.get('/sessions/active'),
-  getSession: (id) => api.get(`/sessions/${id}`),
+  getSession: (id) => api.get(`/sessions/${id}`, {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+    },
+    params: {
+      _t: Date.now(), // Add timestamp to prevent caching
+    }
+  }),
   markAttendance: (id, data) => api.post(`/sessions/${id}/mark`, data),
   markAttendanceProximity: (id, data) => api.post(`/sessions/${id}/mark-proximity`, data),
   endSession: (id) => api.post(`/sessions/${id}/end`),
