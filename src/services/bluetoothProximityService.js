@@ -154,13 +154,14 @@ export async function scanForTeacherDevice(sessionToken) {
         };
       }
 
-      // Pure BLE scanning - scan for 10 seconds
+      // Pure BLE scanning - scan for 15 seconds
       return new Promise((resolve) => {
         let found = false;
         const targetServiceUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
         
         console.log('🔵 Starting Pure BLE scan for service:', targetServiceUUID);
         console.log('🔍 Looking for token:', sessionToken);
+        console.log('⏱️  Scan timeout: 15 seconds');
         
         // Scan for all devices (not just with specific service, to maximize detection)
         manager.startDeviceScan(null, null, (error, device) => {
@@ -213,7 +214,7 @@ export async function scanForTeacherDevice(sessionToken) {
           }
         });
 
-        // Timeout after 10 seconds (longer for BLE to detect advertising)
+        // Timeout after 15 seconds (longer for BLE to detect advertising)
         setTimeout(async () => {
           try {
             manager.stopDeviceScan();
@@ -232,7 +233,7 @@ export async function scanForTeacherDevice(sessionToken) {
               message: 'Teacher device not found. Please ensure teacher has started the session and is nearby.',
             });
           }
-        }, 10000);
+        }, 15000);
       });
     } catch (bleError) {
       console.error('❌ BLE scanning error:', bleError.message);
