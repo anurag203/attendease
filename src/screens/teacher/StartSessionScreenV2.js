@@ -37,6 +37,7 @@ export default function StartSessionScreen({ navigation, route }) {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
   const [checkingBluetooth, setCheckingBluetooth] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     init();
@@ -68,7 +69,7 @@ export default function StartSessionScreen({ navigation, route }) {
   // Poll for attendance updates
   useEffect(() => {
     let interval;
-    if (sessionStarted && sessionId) {
+    if (sessionStarted && sessionId && dataLoaded) {
       // Fetch immediately when session starts
       fetchSessionData();
       
@@ -80,7 +81,7 @@ export default function StartSessionScreen({ navigation, route }) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [sessionStarted, sessionId, fetchSessionData]);
+  }, [sessionStarted, sessionId, dataLoaded, fetchSessionData]);
 
   // Listen for app state changes to detect when returning from settings
   useEffect(() => {
@@ -220,7 +221,10 @@ export default function StartSessionScreen({ navigation, route }) {
         if (remainingSeconds > 0) {
           console.log('✅ Session is active, remaining:', remainingSeconds);
           setTimeRemaining(remainingSeconds);
-          setMarkedStudents(session.attendance || session.marked_students || []);
+          const attendanceList = session.attendance || session.marked_students || [];
+          setMarkedStudents(attendanceList);
+          setDataLoaded(true); // Mark data as loaded to start polling
+          console.log('📊 Loaded existing session data:', attendanceList.length, 'students');
         } else {
           // Session has already ended
           console.log('❌ Time expired, remaining:', remainingSeconds);
@@ -287,6 +291,7 @@ export default function StartSessionScreen({ navigation, route }) {
       setSessionId(sessionData.id);
       setSessionStarted(true);
       setTimeRemaining(selectedDuration * 60); // Convert to seconds
+      setDataLoaded(true); // Enable polling for new sessions
       
       // Simple approach: Just keep Bluetooth ON
       Alert.alert(
