@@ -8,6 +8,7 @@ import {
   FlatList,
   AppState,
   Clipboard,
+  NativeModules,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { sessionAPI } from '../../services/api';
@@ -19,6 +20,8 @@ import {
 } from '../../services/bluetoothService';
 import { openBluetoothSettings } from '../../services/bluetoothProximityService';
 import { COLORS } from '../../utils/constants';
+
+const { BleAdvertiser } = NativeModules;
 
 const TIME_OPTIONS = [
   { label: '2 minutes', value: 2 },
@@ -274,14 +277,39 @@ export default function StartSessionScreen({ navigation, route }) {
       setSessionStarted(true);
       setTimeRemaining(selectedDuration * 60); // Convert to seconds
       
-      Alert.alert(
-        'Session Started! ✅',
-        `Your Proximity Token: ${sessionData.proximity_token}\n\nIMPORTANT: Change your Bluetooth name to:\n\nATTENDEASE-${sessionData.proximity_token}\n\nThen keep Bluetooth ON for students to detect you.`,
-        [
-          { text: 'Open BT Settings', onPress: openBluetoothSettings },
-          { text: 'OK' },
-        ]
-      );
+      // Automatically start BLE advertising
+      if (BleAdvertiser) {
+        try {
+          console.log('🔵 Starting BLE advertising with token:', sessionData.proximity_token);
+          const result = await BleAdvertiser.startAdvertising(sessionData.proximity_token);
+          console.log('✅ BLE Advertising started:', result);
+          
+          Alert.alert(
+            'Session Started! ✅',
+            `Proximity Token: ${sessionData.proximity_token}\n\n✨ Your phone is now broadcasting automatically!\n\nStudents nearby can now scan and mark attendance.\n\nNo manual setup needed!`,
+            [{ text: 'OK' }]
+          );
+        } catch (bleError) {
+          console.error('❌ BLE Advertising error:', bleError);
+          Alert.alert(
+            'Session Started! ⚠️',
+            `Proximity Token: ${sessionData.proximity_token}\n\nBLE advertising failed: ${bleError.message}\n\nPlease change your Bluetooth name manually to:\nATTENDEASE-${sessionData.proximity_token}`,
+            [
+              { text: 'Open BT Settings', onPress: openBluetoothSettings },
+              { text: 'OK' },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Session Started!',
+          `Proximity Token: ${sessionData.proximity_token}\n\nPlease change your Bluetooth name to:\nATTENDEASE-${sessionData.proximity_token}`,
+          [
+            { text: 'Open BT Settings', onPress: openBluetoothSettings },
+            { text: 'OK' },
+          ]
+        );
+      }
     } catch (error) {
       console.error('Start session error:', error.response?.data);
       Alert.alert('Error', error.response?.data?.error || 'Failed to start session');
@@ -334,6 +362,16 @@ export default function StartSessionScreen({ navigation, route }) {
       // Stop timer immediately
       setSessionStarted(false);
       setTimeRemaining(0);
+      
+      // Stop BLE advertising
+      if (BleAdvertiser) {
+        try {
+          await BleAdvertiser.stopAdvertising();
+          console.log('🛑 BLE Advertising stopped');
+        } catch (error) {
+          console.error('Error stopping BLE advertising:', error);
+        }
+      }
       
       await sessionAPI.endSession(sessionId);
       
