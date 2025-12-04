@@ -7,7 +7,6 @@ import {
   Alert,
   FlatList,
   AppState,
-  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { sessionAPI } from '../../services/api';
@@ -406,7 +405,7 @@ export default function StartSessionScreen({ navigation, route }) {
                 </Text>
                 <Text style={styles.bluetoothStatusSubtitle}>
                   {isBluetoothOn 
-                    ? 'Ready to start broadcasting'
+                    ? 'Ready to start session'
                     : 'Please enable Bluetooth to continue'
                   }
                 </Text>
@@ -462,11 +461,6 @@ export default function StartSessionScreen({ navigation, route }) {
     );
   }
 
-  const copyTokenToClipboard = () => {
-    const deviceName = `ATTENDEASE-${proximityToken}`;
-    Clipboard.setString(deviceName);
-    Alert.alert('Copied!', `"${deviceName}" copied to clipboard`);
-  };
 
   // Active session screen with circular timer
   return (
@@ -477,14 +471,14 @@ export default function StartSessionScreen({ navigation, route }) {
         <Text style={styles.sessionCourseCode}>#{course.course_code}</Text>
       </View>
 
-      {/* BLE Broadcasting Status Card */}
+      {/* Session Active Status Card */}
       {proximityToken && (
         <View style={styles.broadcastCard}>
           <View style={styles.broadcastHeader}>
-            <Text style={styles.broadcastIcon}>📡</Text>
+            <Text style={styles.broadcastIcon}>✅</Text>
             <View style={styles.broadcastInfo}>
-              <Text style={styles.broadcastTitle}>Broadcasting Active</Text>
-              <Text style={styles.broadcastSubtitle}>Students can now detect you</Text>
+              <Text style={styles.broadcastTitle}>Session Active</Text>
+              <Text style={styles.broadcastSubtitle}>Students can now mark attendance</Text>
             </View>
           </View>
           
@@ -494,7 +488,7 @@ export default function StartSessionScreen({ navigation, route }) {
           </View>
           
           <Text style={styles.broadcastMessage}>
-            ✨ Your phone is automatically broadcasting via BLE. Keep Bluetooth ON for students to mark attendance.
+            📱 Keep your Bluetooth ON. Students nearby can mark attendance automatically.
           </Text>
         </View>
       )}
