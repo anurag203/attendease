@@ -34,7 +34,6 @@ export default function StartSessionScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [proximityToken, setProximityToken] = useState(null);
   const [checkingBluetooth, setCheckingBluetooth] = useState(true);
 
   useEffect(() => {
@@ -267,14 +266,13 @@ export default function StartSessionScreen({ navigation, route }) {
 
       const sessionData = response.data.data;
       setSessionId(sessionData.id);
-      setProximityToken(sessionData.proximity_token);
       setSessionStarted(true);
       setTimeRemaining(selectedDuration * 60); // Convert to seconds
       
       // Simple approach: Just keep Bluetooth ON
       Alert.alert(
         'Session Started! ✅',
-        `Proximity Token: ${sessionData.proximity_token}\n\n📱 Keep your Bluetooth ON!\n\nStudents nearby with Bluetooth ON can now mark their attendance automatically.`,
+        '📱 Keep your Bluetooth ON!\n\nStudents nearby can now scan and mark their attendance automatically.',
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -293,11 +291,6 @@ export default function StartSessionScreen({ navigation, route }) {
       const sessionData = response.data?.data;
       const attendanceList = sessionData?.attendance || [];
       setMarkedStudents(attendanceList);
-      
-      // Update token if not set
-      if (!proximityToken && sessionData?.proximity_token) {
-        setProximityToken(sessionData.proximity_token);
-      }
     } catch (error) {
       console.error('Error fetching session data:', error);
       // Silently fail - don't show error to user during live session
@@ -329,16 +322,6 @@ export default function StartSessionScreen({ navigation, route }) {
       // Stop timer immediately
       setSessionStarted(false);
       setTimeRemaining(0);
-      
-      // Stop BLE advertising
-      if (BleAdvertiser) {
-        try {
-          await BleAdvertiser.stopAdvertising();
-          console.log('🛑 BLE Advertising stopped');
-        } catch (error) {
-          console.error('Error stopping BLE advertising:', error);
-        }
-      }
       
       await sessionAPI.endSession(sessionId);
       
@@ -472,26 +455,19 @@ export default function StartSessionScreen({ navigation, route }) {
       </View>
 
       {/* Session Active Status Card */}
-      {proximityToken && (
-        <View style={styles.broadcastCard}>
-          <View style={styles.broadcastHeader}>
-            <Text style={styles.broadcastIcon}>✅</Text>
-            <View style={styles.broadcastInfo}>
-              <Text style={styles.broadcastTitle}>Session Active</Text>
-              <Text style={styles.broadcastSubtitle}>Students can now mark attendance</Text>
-            </View>
+      <View style={styles.broadcastCard}>
+        <View style={styles.broadcastHeader}>
+          <Text style={styles.broadcastIcon}>✅</Text>
+          <View style={styles.broadcastInfo}>
+            <Text style={styles.broadcastTitle}>Session Active</Text>
+            <Text style={styles.broadcastSubtitle}>Students can now mark attendance</Text>
           </View>
-          
-          <View style={styles.tokenDisplay}>
-            <Text style={styles.tokenDisplayLabel}>Token:</Text>
-            <Text style={styles.tokenDisplayValue}>{proximityToken}</Text>
-          </View>
-          
-          <Text style={styles.broadcastMessage}>
-            📱 Keep your Bluetooth ON. Students nearby can mark attendance automatically.
-          </Text>
         </View>
-      )}
+        
+        <Text style={styles.broadcastMessage}>
+          📱 Keep your Bluetooth ON. Students nearby can mark attendance automatically.
+        </Text>
+      </View>
 
       {/* Circular Timer */}
       <View style={styles.timerSection}>
