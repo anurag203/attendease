@@ -408,3 +408,142 @@ exports.getStudentStats = async (req, res) => {
     res.status(500).json({ error: 'Server error while fetching stats' });
   }
 };
+
+// In-memory storage for active beacon tokens (session_id -> tokens array)
+const activeTokens = new Map();
+
+// Token expiration time (30 seconds)
+const TOKEN_EXPIRATION_MS = 30000;
+
+/**
+ * Store BLE beacon token (Teacher)
+ * POST /api/sessions/:id/token
+ */
+exports.storeBeaconToken = async (req, res) => {
+  try {
+    const { id: sessionId } = req.params;
+    const { token, timestamp } = req.body;
+
+    if (!token || !timestamp) {
+      return res.status(400).json({ error: 'Token and timestamp are required' });
+    }
+
+    // Verify session belongs to teacher and is active
+    const sessionResult = await pool.query(
+      'SELECT * FROM attendance_sessions WHERE id = $1 AND teacher_id = $2 AND status = $3',
+      [sessionId, req.user.id, 'active']
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Active session not found' });
+    }
+
+    // Get or create tokens array for this session
+    if (!activeTokens.has(sessionId)) {
+      activeTokens.set(sessionId, []);
+    }
+
+    const tokens = activeTokens.get(sessionId);
+
+    // Add new token
+    tokens.push({
+      token,
+      timestamp,
+      createdAt: Date.now(),
+    });
+
+    // Clean up expired tokens
+    const now = Date.now();
+    const validTokens = tokens.filter(t => (now - t.createdAt) < TOKEN_EXPIRATION_MS);
+    activeTokens.set(sessionId, validTokens);
+
+    console.log(`✅ Stored token for session ${sessionId}. Active tokens: ${validTokens.length}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Token stored successfully',
+      activeTokenCount: validTokens.length,
+    });
+
+  } catch (error) {
+    console.error('Store beacon token error:', error);
+    res.status(500).json({ error: 'Server error while storing token' });
+  }
+};
+
+/**
+ * Verify BLE beacon token and mark attendance (Student)
+ * POST /api/sessions/:id/verify-token
+ */
+exports.verifyBeaconToken = async (req, res) => {
+  try {
+    const { id: sessionId } = req.params;
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    // Get active session
+    const sessionResult = await pool.query(
+      'SELECT * FROM attendance_sessions WHERE id = $1 AND status = $2',
+      [sessionId, 'active']
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Active session not found' });
+    }
+
+    // Check if session has active tokens
+    if (!activeTokens.has(sessionId)) {
+      return res.status(400).json({ error: 'No active tokens for this session' });
+    }
+
+    const tokens = activeTokens.get(sessionId);
+    
+    // Clean up expired tokens
+    const now = Date.now();
+    const validTokens = tokens.filter(t => (now - t.createdAt) < TOKEN_EXPIRATION_MS);
+    activeTokens.set(sessionId, validTokens);
+
+    // Verify token exists in valid tokens
+    const isValidToken = validTokens.some(t => t.token === token);
+
+    if (!isValidToken) {
+      console.log(`❌ Invalid/expired token for session ${sessionId}`);
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    console.log(`✅ Token verified for session ${sessionId}, student ${req.user.id}`);
+
+    // Check if already marked
+    const existingAttendance = await pool.query(
+      'SELECT * FROM attendance WHERE session_id = $1 AND student_id = $2',
+      [sessionId, req.user.id]
+    );
+
+    if (existingAttendance.rows.length > 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'Attendance already marked',
+        attendance: existingAttendance.rows[0],
+      });
+    }
+
+    // Mark attendance
+    const attendanceResult = await pool.query(
+      'INSERT INTO attendance (session_id, student_id, marked_at) VALUES ($1, $2, NOW()) RETURNING *',
+      [sessionId, req.user.id]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance marked successfully via BLE beacon',
+      attendance: attendanceResult.rows[0],
+    });
+
+  } catch (error) {
+    console.error('Verify beacon token error:', error);
+    res.status(500).json({ error: 'Server error while verifying token' });
+  }
+};

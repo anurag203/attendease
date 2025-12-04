@@ -10,6 +10,8 @@ const {
   deleteAttendance,
   deleteSession,
   getStudentCourseHistory,
+  storeBeaconToken,
+  verifyBeaconToken,
 } = require('../controllers/sessionController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -24,6 +26,10 @@ router.get('/:id', protect, getSession);
 router.post('/:id/mark', protect, authorize('student'), markAttendance);
 router.post('/:id/end', protect, authorize('teacher'), endSession);
 router.delete('/:id', protect, authorize('teacher'), deleteSession);
+
+// BLE Beacon token routes
+router.post('/:id/token', protect, authorize('teacher'), storeBeaconToken);
+router.post('/:id/verify-token', protect, authorize('student'), verifyBeaconToken);
 
 // Attendance delete route (separate from sessions)
 router.delete('/attendance/:attendanceId', protect, authorize('teacher'), deleteAttendance);
