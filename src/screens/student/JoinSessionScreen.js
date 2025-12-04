@@ -42,7 +42,7 @@ export default function JoinSessionScreen({ navigation, route }) {
     };
   }, []);
 
-  // Auto-scan every 10 seconds when Bluetooth is ON and attendance not marked
+  // Auto-scan every 15 seconds when Bluetooth is ON and attendance not marked
   useEffect(() => {
     let interval;
     if (isBluetoothOn && !attendanceMarked) {
@@ -51,10 +51,10 @@ export default function JoinSessionScreen({ navigation, route }) {
         scanForTeacher();
       }, 1000);
       
-      // Then scan every 10 seconds
+      // Then scan every 15 seconds (Bluetooth discovery takes ~12 seconds)
       interval = setInterval(() => {
         scanForTeacher();
-      }, 10000);
+      }, 15000);
       
       return () => {
         clearTimeout(initialTimeout);
