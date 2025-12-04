@@ -16,7 +16,6 @@ import {
   requestBluetoothPermissions,
   checkBluetoothState,
   enableBluetooth,
-  getDeviceAddress,
 } from '../../services/bluetoothService';
 import { openBluetoothSettings } from '../../services/bluetoothProximityService';
 import { COLORS } from '../../utils/constants';
@@ -33,7 +32,6 @@ const TIME_OPTIONS = [
 export default function StartSessionScreen({ navigation, route }) {
   const { course, existingSessionId } = route.params;
   const [isBluetoothOn, setIsBluetoothOn] = useState(false);
-  const [deviceAddress, setDeviceAddress] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(2);
   const [sessionStarted, setSessionStarted] = useState(!!existingSessionId);
   const [sessionId, setSessionId] = useState(existingSessionId || null);
@@ -42,6 +40,7 @@ export default function StartSessionScreen({ navigation, route }) {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
   const [proximityToken, setProximityToken] = useState(null);
+  const [checkingBluetooth, setCheckingBluetooth] = useState(true);
 
   useEffect(() => {
     init();
@@ -91,20 +90,15 @@ export default function StartSessionScreen({ navigation, route }) {
         console.log('🔄 App became active, checking Bluetooth...');
         const state = await checkBluetoothState();
         setIsBluetoothOn(state);
-        
-        if (state && !deviceAddress) {
-          const address = await getDeviceAddress();
-          setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
-        }
       }
     });
 
     return () => {
       subscription?.remove();
     };
-  }, [deviceAddress]);
+  }, []);
 
-  // Continuously monitor Bluetooth state (poll every 3 seconds)
+  // Continuously monitor Bluetooth state
   useEffect(() => {
     const checkBluetoothContinuously = async () => {
       const state = await checkBluetoothState();
@@ -114,43 +108,34 @@ export default function StartSessionScreen({ navigation, route }) {
         console.log('🔵 Bluetooth state changed:', isBluetoothOn, '→', state);
         setIsBluetoothOn(state);
         
-        // If Bluetooth just turned ON
-        if (state) {
-          if (!deviceAddress) {
-            const address = await getDeviceAddress();
-            if (address) {
-              setDeviceAddress(address);
-              console.log('✅ Got device address:', address);
+        // If Bluetooth turned OFF during active session
+        if (!state && sessionStarted && sessionId) {
+          console.log('🛑 Ending session immediately due to Bluetooth OFF');
+          
+          // Stop BLE advertising
+          if (BleAdvertiser) {
+            try {
+              await BleAdvertiser.stopAdvertising();
+            } catch (error) {
+              console.error('Error stopping advertising:', error);
             }
           }
-        }
-        // If Bluetooth turned OFF
-        else {
-          console.log('⚠️ Bluetooth turned OFF!');
-          setDeviceAddress(null);
           
-          // If session is running, terminate it immediately
-          if (sessionStarted && sessionId) {
-            console.log('🛑 Ending session immediately due to Bluetooth OFF');
-            
-            // End session immediately (without showing alert from handleEndSession)
-            await handleEndSession(false);
-            
-            // Then show alert and navigate back
-            Alert.alert(
-              '⚠️ Session Ended',
-              'Bluetooth was turned off. The session has been ended automatically.',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    navigation.goBack();
-                  }
-                }
-              ],
-              { cancelable: false }
-            );
-          }
+          // End session
+          await handleEndSession(false);
+          
+          // Show alert
+          Alert.alert(
+            '⚠️ Session Ended',
+            'Bluetooth was turned off. The session has been ended automatically.',
+            [
+              {
+                text: 'OK',
+                onPress: () => navigation.goBack()
+              }
+            ],
+            { cancelable: false }
+          );
         }
       }
     };
@@ -158,25 +143,23 @@ export default function StartSessionScreen({ navigation, route }) {
     // Check immediately
     checkBluetoothContinuously();
 
-    // Then check every 1.5 seconds
-    const interval = setInterval(checkBluetoothContinuously, 1500);
+    // Then check every 2 seconds
+    const interval = setInterval(checkBluetoothContinuously, 2000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [isBluetoothOn, deviceAddress, sessionStarted, sessionId]);
+  }, [isBluetoothOn, sessionStarted, sessionId]);
 
   const init = async () => {
+    setCheckingBluetooth(true);
     const granted = await requestBluetoothPermissions();
     if (granted) {
       const state = await checkBluetoothState();
       setIsBluetoothOn(state);
-      
-      if (state) {
-        const address = await getDeviceAddress();
-        setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
-      }
+      console.log('✅ Bluetooth initial state:', state ? 'ON' : 'OFF');
     }
+    setCheckingBluetooth(false);
 
     // Get total students for this course
     let studentCount = course.student_count || course.students?.length || 0;
@@ -257,8 +240,7 @@ export default function StartSessionScreen({ navigation, route }) {
       const enabled = await enableBluetooth();
       if (enabled) {
         setIsBluetoothOn(true);
-        const address = await getDeviceAddress();
-        setDeviceAddress(address || 'DEVICE-' + Date.now().toString().slice(-8));
+        console.log('✅ Bluetooth enabled');
       }
     }
   };
@@ -445,13 +427,30 @@ export default function StartSessionScreen({ navigation, route }) {
             <Text style={styles.courseCode}>#{course.course_code}</Text>
           </View>
 
-          {/* Info Box */}
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>📱 How it works:</Text>
-            <Text style={styles.infoText}>1. Start the session</Text>
-            <Text style={styles.infoText}>2. You'll get a proximity token</Text>
-            <Text style={styles.infoText}>3. Change your Bluetooth name</Text>
-            <Text style={styles.infoText}>4. Students can scan and mark attendance</Text>
+          {/* Bluetooth Status Section */}
+          <View style={[styles.bluetoothStatusCard, !isBluetoothOn && styles.bluetoothStatusCardOff]}>
+            <View style={styles.bluetoothStatusHeader}>
+              <Text style={styles.bluetoothStatusIcon}>{isBluetoothOn ? '📡' : '⚠️'}</Text>
+              <View style={styles.bluetoothStatusInfo}>
+                <Text style={styles.bluetoothStatusTitle}>
+                  Bluetooth {isBluetoothOn ? 'ON' : 'OFF'}
+                </Text>
+                <Text style={styles.bluetoothStatusSubtitle}>
+                  {isBluetoothOn 
+                    ? 'Ready to start broadcasting'
+                    : 'Please enable Bluetooth to continue'
+                  }
+                </Text>
+              </View>
+            </View>
+            {!isBluetoothOn && (
+              <TouchableOpacity
+                style={styles.enableBluetoothButton}
+                onPress={handleBluetoothToggle}
+              >
+                <Text style={styles.enableBluetoothText}>Enable Bluetooth</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Time Selection */}
@@ -481,12 +480,12 @@ export default function StartSessionScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity
-            style={[styles.startButton, loading && styles.buttonDisabled]}
+            style={[styles.startButton, (!isBluetoothOn || loading) && styles.buttonDisabled]}
             onPress={handleStartSession}
-            disabled={loading}
+            disabled={!isBluetoothOn || loading}
           >
             <Text style={styles.startButtonText}>
-              {loading ? 'Starting...' : '🚀 Start Attendance Session'}
+              {loading ? 'Starting...' : !isBluetoothOn ? '📡 Enable Bluetooth First' : '🚀 Start Attendance Session'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -617,25 +616,51 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-  infoBox: {
-    backgroundColor: COLORS.darkGray,
-    padding: 16,
-    borderRadius: 12,
+  bluetoothStatusCard: {
+    backgroundColor: '#064e3b',
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: '#10b981',
   },
-  infoTitle: {
+  bluetoothStatusCardOff: {
+    backgroundColor: '#450a0a',
+    borderColor: '#ef4444',
+  },
+  bluetoothStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bluetoothStatusIcon: {
+    fontSize: 36,
+    marginRight: 16,
+  },
+  bluetoothStatusInfo: {
+    flex: 1,
+  },
+  bluetoothStatusTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 4,
+  },
+  bluetoothStatusSubtitle: {
+    fontSize: 14,
+    color: COLORS.lightGray,
+  },
+  enableBluetoothButton: {
+    backgroundColor: COLORS.primary,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  enableBluetoothText: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.white,
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    color: COLORS.lightGray,
-    marginBottom: 6,
-    lineHeight: 20,
   },
   bluetoothSection: {
     backgroundColor: COLORS.darkGray,
