@@ -75,6 +75,21 @@ const createTables = async () => {
       );
     `);
 
+    // Add bluetooth_mac columns if they don't exist
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bluetooth_mac VARCHAR(17);`);
+      console.log('✅ bluetooth_mac column ensured on users table');
+    } catch (e) {
+      console.log('bluetooth_mac column already exists or error:', e.message);
+    }
+    
+    try {
+      await pool.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS teacher_bluetooth_mac VARCHAR(17);`);
+      console.log('✅ teacher_bluetooth_mac column ensured on courses table');
+    } catch (e) {
+      console.log('teacher_bluetooth_mac column already exists or error:', e.message);
+    }
+
     // Create indexes
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
