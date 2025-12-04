@@ -161,20 +161,22 @@ export default function TeacherDashboard({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Bluetooth Setup Banner - show if MAC not configured */}
-      {!user?.bluetooth_mac && (
-        <TouchableOpacity
-          style={styles.setupBanner}
-          onPress={() => navigation.navigate('BluetoothSetup')}
-        >
-          <Text style={styles.setupBannerIcon}>📱</Text>
-          <View style={styles.setupBannerContent}>
-            <Text style={styles.setupBannerTitle}>Setup Bluetooth</Text>
-            <Text style={styles.setupBannerText}>Configure your device for attendance</Text>
-          </View>
-          <Text style={styles.setupBannerArrow}>→</Text>
-        </TouchableOpacity>
-      )}
+      {/* Bluetooth Settings Banner - show setup or edit option */}
+      <TouchableOpacity
+        style={[styles.setupBanner, user?.bluetooth_mac && styles.setupBannerConfigured]}
+        onPress={() => navigation.navigate('BluetoothSetup')}
+      >
+        <Text style={styles.setupBannerIcon}>{user?.bluetooth_mac ? '✅' : '📱'}</Text>
+        <View style={styles.setupBannerContent}>
+          <Text style={styles.setupBannerTitle}>
+            {user?.bluetooth_mac ? 'Bluetooth Configured' : 'Setup Bluetooth'}
+          </Text>
+          <Text style={styles.setupBannerText}>
+            {user?.bluetooth_mac ? `MAC: ${user.bluetooth_mac}` : 'Configure your device for attendance'}
+          </Text>
+        </View>
+        <Text style={styles.setupBannerArrow}>✏️</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={courses}
@@ -408,5 +410,9 @@ const styles = StyleSheet.create({
   setupBannerArrow: {
     fontSize: 20,
     color: COLORS.primary,
+  },
+  setupBannerConfigured: {
+    backgroundColor: '#0f3d0f',
+    borderColor: '#10b981',
   },
 });

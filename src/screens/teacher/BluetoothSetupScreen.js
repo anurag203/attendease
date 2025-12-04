@@ -19,10 +19,9 @@ export default function BluetoothSetupScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleMacChange = (text) => {
-    // Allow hex characters and colons, convert to uppercase
-    const cleaned = text.replace(/[^0-9A-Fa-f:]/g, '').toUpperCase();
-    // Limit to 17 characters (XX:XX:XX:XX:XX:XX)
-    setMacAddress(cleaned.slice(0, 17));
+    // Just set the text directly - validation happens on save
+    // Only filter out completely invalid characters and uppercase
+    setMacAddress(text.toUpperCase().slice(0, 17));
   };
 
   const handleSave = async () => {
@@ -92,9 +91,11 @@ export default function BluetoothSetupScreen({ navigation }) {
             style={styles.input}
             value={macAddress}
             onChangeText={handleMacChange}
-            placeholder="XX:XX:XX:XX:XX:XX"
+            placeholder="44:16:FA:1D:D2:8D"
             placeholderTextColor={COLORS.mediumGray}
-            autoCapitalize="characters"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
             maxLength={17}
           />
           <Text style={styles.inputHint}>Format: 44:16:FA:1D:D2:8D</Text>
