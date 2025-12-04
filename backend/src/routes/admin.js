@@ -42,4 +42,36 @@ router.post('/migrate-proximity-token', async (req, res) => {
   }
 });
 
+// Migration for bluetooth_mac columns
+router.post('/migrate-bluetooth-mac', async (req, res) => {
+  try {
+    console.log('🔧 Running bluetooth_mac migration...');
+    
+    // Add bluetooth_mac column to users table
+    await pool.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS bluetooth_mac VARCHAR(17);
+    `);
+    console.log('✅ Added bluetooth_mac to users table');
+    
+    // Add teacher_bluetooth_mac column to courses table
+    await pool.query(`
+      ALTER TABLE courses 
+      ADD COLUMN IF NOT EXISTS teacher_bluetooth_mac VARCHAR(17);
+    `);
+    console.log('✅ Added teacher_bluetooth_mac to courses table');
+    
+    res.json({ 
+      success: true, 
+      message: 'Bluetooth MAC migration completed successfully' 
+    });
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({ 
+      error: 'Migration failed', 
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;
