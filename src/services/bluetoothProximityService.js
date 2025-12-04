@@ -210,8 +210,15 @@ export async function scanForTeacherDevice(sessionToken) {
         });
 
         // Timeout after 8 seconds
-        setTimeout(() => {
-          manager.stopDeviceScan();
+        setTimeout(async () => {
+          try {
+            manager.stopDeviceScan();
+            await manager.destroy();
+            console.log('🧹 BLE Manager cleaned up');
+          } catch (cleanupError) {
+            console.log('⚠️ BLE cleanup error:', cleanupError.message);
+          }
+          
           if (!found) {
             console.log('⏰ BLE scan timeout, trying classic Bluetooth...');
             // Fallback to classic Bluetooth
@@ -243,6 +250,14 @@ async function scanClassicBluetooth(sessionToken) {
   try {
     const targetName = `ATTENDEASE-${sessionToken}`;
     console.log('🔎 Looking for device name:', targetName);
+
+    // Cancel any existing discovery first
+    try {
+      await RNBluetoothClassic.cancelDiscovery();
+      console.log('🛑 Cancelled existing discovery');
+    } catch (cancelError) {
+      console.log('⚠️ No existing discovery to cancel');
+    }
 
     const devices = await RNBluetoothClassic.startDiscovery();
     console.log(`📡 Found ${devices.length} Bluetooth devices`);
