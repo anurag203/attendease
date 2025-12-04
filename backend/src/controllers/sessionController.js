@@ -146,11 +146,24 @@ exports.getSession = async (req, res) => {
       [id]
     );
 
+    // Get total students count for this course
+    const totalStudentsResult = await pool.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE role = 'student' 
+       AND degree = $1 
+       AND branch = $2 
+       AND year = $3
+       AND id NOT IN (SELECT student_id FROM course_exclusions WHERE course_id = $4)`,
+      [session.degree, session.branch, session.year, session.course_id]
+    );
+
     res.status(200).json({
       success: true,
       data: {
         ...session,
         marked_students: attendanceResult.rows,
+        attendance: attendanceResult.rows, // Also add as 'attendance' for consistency
+        total_students: parseInt(totalStudentsResult.rows[0].count),
       },
     });
   } catch (error) {

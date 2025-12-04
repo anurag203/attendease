@@ -310,6 +310,11 @@ export default function StartSessionScreen({ navigation, route }) {
       const sessionData = response.data?.data;
       const attendanceList = sessionData?.attendance || [];
       setMarkedStudents(attendanceList);
+      
+      // Also update total students count if available from session
+      if (sessionData?.total_students !== undefined) {
+        setTotalStudents(sessionData.total_students);
+      }
     } catch (error) {
       console.error('Error fetching session data:', error);
       // Silently fail - don't show error to user during live session
